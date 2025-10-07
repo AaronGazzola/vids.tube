@@ -7,38 +7,46 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
 ## Core Technologies (MVP)
 
 ### Frontend Framework
+
 - **Next.js 15** (App Router) - Server components and client components for optimal performance
 - **React 19** - UI components and state management
 - **TypeScript** - Type safety
 
 ### Styling
+
 - **Tailwind CSS 4** - Utility-first styling
 - **shadcn/ui** - Pre-built accessible components
 
 ### State Management
+
 - **Zustand** - Lightweight state management for:
   - YouTube video URL/metadata
   - Clip collection (crop positions, timestamps)
   - Editor state (current frame position, playback state)
 
 ### Data Fetching
+
 - **React Query** - Caching and managing:
   - YouTube video metadata
   - Video processing job status
 
 ### Video Processing
+
 - **FFmpeg.wasm** - Client-side video processing for:
   - Real-time preview of crop frame
   - Initial video loading and metadata extraction
 
 ### Backend API
+
 - **Next.js API Routes** - Serverless functions for:
   - YouTube video metadata fetching (using youtube-dl or similar)
   - Triggering video processing jobs
   - Polling job status
 
 ### Video Processing Backend
+
 - **Supabase Storage** - Temporary storage for:
+
   - Source video downloads from YouTube
   - Processed clip outputs
   - Final compiled video
@@ -50,6 +58,7 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
   - Generate download URL with expiration
 
 ### Database
+
 - **Prisma ORM** with **PostgreSQL** (via Supabase) - Minimal schema for:
   - Video processing jobs
   - Job status tracking
@@ -60,6 +69,7 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
 ## Architecture Flow
 
 ### Phase 1: Video Selection & Loading
+
 1. User pastes YouTube URL into input field
 2. Frontend validates URL format
 3. API route fetches video metadata (title, duration, thumbnail) via youtube-dl
@@ -67,6 +77,7 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
 5. Video metadata stored in Zustand state
 
 ### Phase 2: Crop Frame Editor
+
 1. Video player rendered with portrait crop frame overlay
 2. Crop frame component:
    - Draggable handles for repositioning (x, y coordinates)
@@ -81,6 +92,7 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
 4. Current crop frame state stored in Zustand
 
 ### Phase 3: Clip Creation
+
 1. User sets start timestamp (current playback position or manual input)
 2. User sets end timestamp (current playback position or manual input)
 3. User clicks "Add Clip" button
@@ -100,6 +112,7 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
 6. User can create multiple clips with different timestamps and crop positions
 
 ### Phase 4: Clip Management
+
 1. Sidebar displays list of created clips
 2. Each clip shows:
    - Thumbnail preview
@@ -112,6 +125,7 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
 4. Clips array managed in Zustand
 
 ### Phase 5: Video Compilation & Download
+
 1. User clicks "Create Short" button
 2. Frontend validation:
    - At least one clip exists
@@ -145,6 +159,7 @@ vids.tube is a web application that allows users to create YouTube Shorts from l
 8. User clicks download to save video
 
 ### Phase 6: Cleanup
+
 1. Scheduled job (daily) deletes:
    - Job records older than 24 hours
    - Associated files in Supabase Storage
@@ -202,11 +217,13 @@ model VideoJob {
 ## Key Implementation Details
 
 ### YouTube Video Handling
+
 - Use YouTube Player API for preview (avoids downloading full video client-side)
 - Extract video metadata via API route using youtube-dl or similar
 - Video only downloaded server-side when user submits for processing
 
 ### Crop Frame Implementation
+
 - HTML canvas or div overlay positioned absolutely over video
 - Mouse/touch event handlers for drag and resize
 - Constrain frame to video boundaries
@@ -214,6 +231,7 @@ model VideoJob {
 - Store coordinates relative to original video dimensions
 
 ### FFmpeg Processing (Server-side)
+
 ```bash
 # Per clip:
 ffmpeg -i input.mp4 \
@@ -227,12 +245,14 @@ ffmpeg -f concat -i clips.txt -c copy output.mp4
 ```
 
 ### State Management Pattern
+
 - Single Zustand store for all editor state
 - Clips stored as array with unique IDs
 - Optimistic updates for clip management
 - Persist state to localStorage for draft recovery
 
 ### API Rate Limiting
+
 - Implement rate limiting on API routes to prevent abuse
 - Maximum 10 clips per compilation
 - Maximum video length: 30 minutes
@@ -241,6 +261,7 @@ ffmpeg -f concat -i clips.txt -c copy output.mp4
 ## MVP Exclusions
 
 The following features are **NOT** included in the MVP:
+
 - User authentication/accounts
 - Video uploads (YouTube URLs only)
 - Advanced editing (transitions, filters, text overlays)
