@@ -294,42 +294,48 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
   - Display clips on timeline
   - Interactive preview functionality
 
-## Phase 8: Main Editor Layout
+## Phase 8: Main Editor Layout ✅
 
-### 8.1 Editor Page Component
+### 8.1 Editor Page Component ✅
 
-- [ ] Create `app/editor/page.tsx`
+- [x] Create `app/editor/page.tsx`
   - Two-column layout (main + sidebar)
   - Main area: VideoInput + VideoPlayer + CropFrame + TimelineControls
   - Sidebar: ClipCreator + ClipsList
   - Responsive breakpoints
-- [ ] Create `app/editor/page.types.ts`
+- [x] Create `app/editor/page.types.ts`
   - Define page-level state types
   - Define layout configuration types
+- [x] Create `app/editor/page.hooks.tsx`
+  - Keyboard shortcuts hook for desktop
 
-### 8.2 Layout Components
+### 8.2 Layout Components ✅
 
-- [ ] Create `components/editor/EditorLayout.tsx`
+- [x] Create `components/editor/EditorLayout.tsx`
   - Responsive grid/flex layout
   - Sidebar toggle for mobile
   - Header with app branding
   - Footer with action buttons
-- [ ] Create `components/editor/EditorLayout.types.ts`
+- [x] Create `components/editor/EditorLayout.types.ts`
   - Define layout component props
 
-### 8.3 Responsive Design
+### 8.3 Responsive Design ✅
 
-- [ ] Implement mobile layout
+- [x] Implement mobile layout
   - Stacked layout for small screens
-  - Collapsible sidebar
+  - Collapsible sidebar with overlay
   - Touch-friendly controls
-  - Optimized crop frame for touch
-- [ ] Implement tablet layout
-  - Side-by-side with reduced sidebar
+  - Fixed toggle button for sidebar
+- [x] Implement tablet layout
+  - Side-by-side with reduced sidebar (384px)
   - Touch and mouse support
-- [ ] Implement desktop layout
+- [x] Implement desktop layout
   - Full side-by-side layout
-  - Keyboard shortcuts support
+  - Keyboard shortcuts support:
+    - Space: Play/Pause
+    - Arrow Left/Right: Skip 1 second (Shift: 5 seconds)
+    - Home: Return to start
+    - Ctrl/Cmd + 0-9: Jump to 0-90% of video
 
 ## Phase 9: State Management and Persistence
 

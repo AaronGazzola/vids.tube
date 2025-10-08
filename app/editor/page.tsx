@@ -1,43 +1,47 @@
-"use client";
+'use client';
 
-import { VideoInput } from "@/components/editor/VideoInput";
-import { VideoPlayer } from "@/components/editor/VideoPlayer";
-import { useEditorStore } from "@/store/useEditorStore";
-import { PlayerState } from "@/lib/youtube-player.types";
-import { YouTubePlayer } from "@/lib/youtube-player.types";
+import { useState } from 'react';
+import { EditorLayout } from '@/components/editor/EditorLayout';
+import { VideoInput } from '@/components/editor/VideoInput';
+import { VideoPlayer } from '@/components/editor/VideoPlayer';
+import { CropFrame } from '@/components/editor/CropFrame';
+import { TimelineControls } from '@/components/editor/TimelineControls';
+import { ClipCreator } from '@/components/editor/ClipCreator';
+import { ClipsList } from '@/components/editor/ClipsList';
+import { useEditorStore } from '@/store/useEditorStore';
+import { useKeyboardShortcuts } from './page.hooks';
 
 export default function EditorPage() {
-  const { videoId, setIsPlaying, setCurrentTime, setDuration } = useEditorStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const videoId = useEditorStore((state) => state.videoId);
 
-  const handlePlayerReady = (player: YouTubePlayer) => {
-    const duration = player.getDuration();
-    setDuration(duration);
-  };
-
-  const handleStateChange = (state: PlayerState) => {
-    setIsPlaying(state === "playing");
-  };
-
-  const handleError = (errorCode: number) => {
-    console.error(JSON.stringify({ error: "YouTube Player Error", code: errorCode }, null, 0));
-  };
+  useKeyboardShortcuts();
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4">YouTube Clip Editor</h1>
-        <div className="space-y-4">
+    <EditorLayout>
+      <main className="flex-1 flex flex-col overflow-auto p-4 lg:p-6">
+        <div className="max-w-7xl mx-auto w-full space-y-6">
           <VideoInput />
+
           {videoId && (
-            <VideoPlayer
-              videoId={videoId}
-              onReady={handlePlayerReady}
-              onStateChange={handleStateChange}
-              onError={handleError}
-            />
+            <>
+              <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
+                <VideoPlayer />
+                <CropFrame />
+              </div>
+
+              <TimelineControls />
+            </>
           )}
         </div>
-      </div>
-    </div>
+      </main>
+
+      <EditorLayout.Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)}>
+        <div className="space-y-6">
+          {videoId && <ClipCreator />}
+          <ClipsList />
+        </div>
+      </EditorLayout.Sidebar>
+    </EditorLayout>
   );
 }
