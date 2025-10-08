@@ -155,39 +155,39 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
   - Show dimension tooltip during resize
   - Snap guides for centering (optional)
 
-## Phase 5: Timeline and Playback Controls
+## Phase 5: Timeline and Playback Controls ✅
 
-### 5.1 Timeline Controls Component
+### 5.1 Timeline Controls Component ✅
 
-- [ ] Create `components/editor/TimelineControls.tsx`
+- [x] Create `components/editor/TimelineControls.tsx`
   - Progress bar showing current position
   - Clickable seek bar
   - Time display (current / total)
   - Play/pause button
   - Frame-by-frame navigation buttons (±1 second)
-- [ ] Create `components/editor/TimelineControls.hooks.tsx`
+- [x] Create `components/editor/TimelineControls.hooks.tsx`
   - `useTimelineControls()` hook
     - Handle seek bar clicks
     - Calculate time from click position
     - Update player current time
     - Sync with player state
-- [ ] Create `components/editor/TimelineControls.types.ts`
+- [x] Create `components/editor/TimelineControls.types.ts`
   - Define timeline component props
   - Define seek event types
 
-### 5.2 Time Format Utilities
+### 5.2 Time Format Utilities ✅
 
-- [ ] Create `lib/time.utils.ts`
+- [x] Create `lib/time.utils.ts`
   - `formatTime(seconds: number): string` (MM:SS or HH:MM:SS)
   - `parseTime(formatted: string): number`
   - `formatDuration(seconds: number): string`
 
-### 5.3 Playback Control Actions
+### 5.3 Playback Control Actions ✅
 
-- [ ] Add `togglePlayback()` action to store
-- [ ] Add `seekTo(time: number)` action to store
-- [ ] Add `skipForward(seconds: number)` action to store
-- [ ] Add `skipBackward(seconds: number)` action to store
+- [x] Add `togglePlayback()` action to store
+- [x] Add `seekTo(time: number)` action to store
+- [x] Add `skipForward(seconds: number)` action to store
+- [x] Add `skipBackward(seconds: number)` action to store
 
 ## Phase 6: Clip Creation Interface
 

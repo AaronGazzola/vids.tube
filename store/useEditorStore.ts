@@ -42,6 +42,8 @@ interface EditorStore {
   clearClips: () => void;
   togglePlayback: () => void;
   seekTo: (time: number) => void;
+  skipForward: (seconds: number) => void;
+  skipBackward: (seconds: number) => void;
   resetEditor: () => void;
 }
 
@@ -109,6 +111,16 @@ export const useEditorStore = create<EditorStore>((set) => ({
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
 
   seekTo: (time) => set({ currentTime: time }),
+
+  skipForward: (seconds: number) =>
+    set((state) => ({
+      currentTime: Math.min(state.currentTime + seconds, state.duration),
+    })),
+
+  skipBackward: (seconds: number) =>
+    set((state) => ({
+      currentTime: Math.max(state.currentTime - seconds, 0),
+    })),
 
   resetEditor: () =>
     set({
