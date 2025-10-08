@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { extractVideoId } from '@/lib/youtube';
 import { Clip } from '@/lib/clip.types';
 
@@ -43,7 +44,9 @@ const DEFAULT_CROP_FRAME: CropPosition = {
   height: 533,
 };
 
-export const useEditorStore = create<EditorStore>((set) => ({
+export const useEditorStore = create<EditorStore>()(
+  persist(
+    (set) => ({
   videoUrl: null,
   videoId: null,
   isPlaying: false,
@@ -121,4 +124,55 @@ export const useEditorStore = create<EditorStore>((set) => ({
       cropFrame: DEFAULT_CROP_FRAME,
       clips: [],
     }),
-}));
+}),
+    {
+      name: 'editor-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        videoUrl: state.videoUrl,
+        videoId: state.videoId,
+        clips: state.clips,
+        cropFrame: state.cropFrame,
+      }),
+    }
+  )
+);
+
+export const useVideoState = () =>
+  useEditorStore((state) => ({
+    videoUrl: state.videoUrl,
+    videoId: state.videoId,
+    setVideoUrl: state.setVideoUrl,
+    clearVideo: state.clearVideo,
+  }));
+
+export const usePlaybackState = () =>
+  useEditorStore((state) => ({
+    isPlaying: state.isPlaying,
+    currentTime: state.currentTime,
+    duration: state.duration,
+    setIsPlaying: state.setIsPlaying,
+    setCurrentTime: state.setCurrentTime,
+    setDuration: state.setDuration,
+    togglePlayback: state.togglePlayback,
+    seekTo: state.seekTo,
+    skipForward: state.skipForward,
+    skipBackward: state.skipBackward,
+  }));
+
+export const useCropFrame = () =>
+  useEditorStore((state) => ({
+    cropFrame: state.cropFrame,
+    setCropFrame: state.setCropFrame,
+    resetCropFrame: state.resetCropFrame,
+  }));
+
+export const useClips = () =>
+  useEditorStore((state) => ({
+    clips: state.clips,
+    addClip: state.addClip,
+    removeClip: state.removeClip,
+    updateClip: state.updateClip,
+    reorderClips: state.reorderClips,
+    clearClips: state.clearClips,
+  }));
