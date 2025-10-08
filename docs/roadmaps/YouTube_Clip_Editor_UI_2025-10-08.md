@@ -104,24 +104,24 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
 - [x] Add `setCurrentTime(time: number)` action
 - [x] Add `setDuration(duration: number)` action
 
-## Phase 4: Crop Frame Implementation
+## Phase 4: Crop Frame Implementation ✅
 
-### 4.1 Crop Frame Component
+### 4.1 Crop Frame Component ✅
 
-- [ ] Create `components/editor/CropFrame.tsx`
+- [x] Create `components/editor/CropFrame.tsx`
   - Absolute positioned overlay div
   - Border styling for 9:16 aspect ratio frame
   - Semi-transparent background outside frame
   - Corner and edge resize handles
   - Center drag handle for positioning
-- [ ] Create `components/editor/CropFrame.types.ts`
+- [x] Create `components/editor/CropFrame.types.ts`
   - Define `CropPosition` interface (x, y, width, height)
   - Define frame bounds constraints
   - Define resize/drag event types
 
-### 4.2 Drag and Resize Logic
+### 4.2 Drag and Resize Logic ✅
 
-- [ ] Create `components/editor/CropFrame.hooks.tsx`
+- [x] Create `components/editor/CropFrame.hooks.tsx`
   - `useDragFrame()` hook for drag functionality
     - Track mouse down/move/up events
     - Calculate new x/y position
@@ -134,23 +134,23 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
     - Prevent frame from going outside video
   - `useCropFramePosition()` hook to sync with store
 
-### 4.3 Frame Position Store Integration
+### 4.3 Frame Position Store Integration ✅
 
-- [ ] Add `cropFrame` object to Zustand store
+- [x] Add `cropFrame` object to Zustand store
   - `x: number` (pixels from left)
   - `y: number` (pixels from top)
   - `width: number` (pixels)
   - `height: number` (pixels, calculated from width \* 16/9)
-- [ ] Add `setCropFrame(position: CropPosition)` action
-- [ ] Add `resetCropFrame()` action to center and default size
+- [x] Add `setCropFrame(position: CropPosition)` action
+- [x] Add `resetCropFrame()` action to center and default size
 
-### 4.4 Visual Overlay
+### 4.4 Visual Overlay ✅
 
-- [ ] Create overlay showing cropped area
+- [x] Create overlay showing cropped area
   - Dark semi-transparent mask outside frame
   - Clear view inside frame
   - Grid lines for alignment (optional)
-- [ ] Add visual feedback during drag/resize
+- [x] Add visual feedback during drag/resize
   - Highlight active handles
   - Show dimension tooltip during resize
   - Snap guides for centering (optional)

@@ -2,7 +2,7 @@
 
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/shadcn.utils';
+import { cn } from '@/lib/utils';
 import { useVideoInput } from './VideoInput.hooks';
 import type { VideoInputProps } from './VideoInput.types';
 
