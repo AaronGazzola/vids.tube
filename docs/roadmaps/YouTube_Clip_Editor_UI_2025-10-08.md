@@ -236,23 +236,23 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
 - [x] Add `reorderClips(startIndex: number, endIndex: number)` action
 - [x] Add `clearClips()` action
 
-## Phase 7: Clips List Sidebar
+## Phase 7: Clips List Sidebar ✅
 
-### 7.1 Clips List Component
+### 7.1 Clips List Component ✅
 
-- [ ] Create `components/editor/ClipsList.tsx`
+- [x] Create `components/editor/ClipsList.tsx`
   - Sidebar container with scrollable area
   - Header with clip count
   - "Clear All" button
   - Empty state message when no clips
   - List of clip items
-- [ ] Create `components/editor/ClipsList.types.ts`
+- [x] Create `components/editor/ClipsList.types.ts`
   - Define clips list component props
   - Define list item props
 
-### 7.2 Clip Item Component
+### 7.2 Clip Item Component ✅
 
-- [ ] Create `components/editor/ClipItem.tsx`
+- [x] Create `components/editor/ClipItem.tsx`
   - Thumbnail preview (YouTube thumbnail with timestamp)
   - Clip number/index
   - Start/end timestamps display
@@ -261,41 +261,38 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
   - Edit button
   - Delete button
   - Drag handle for reordering
-- [ ] Create `components/editor/ClipItem.hooks.tsx`
+- [x] Create `components/editor/ClipItem.hooks.tsx`
   - `useClipItem()` hook
     - Handle edit click (load into editor)
     - Handle delete click (with confirmation)
     - Handle thumbnail generation
-- [ ] Create `components/editor/ClipItem.types.ts`
+- [x] Create `components/editor/ClipItem.types.ts`
   - Define clip item component props
 
-### 7.3 Clip List Interactions
+### 7.3 Clip List Interactions ✅
 
-- [ ] Implement drag-and-drop reordering
-  - Install or implement DnD library
+- [x] Implement drag-and-drop reordering
+  - Install @dnd-kit library
   - Add drag handlers to clip items
   - Update clips array order in store
   - Visual feedback during drag
-- [ ] Implement edit functionality
+- [x] Implement edit functionality
   - Load clip data into editor
   - Set crop frame to clip's crop position
   - Set timeline to clip's start time
-  - Highlight timestamp range
-- [ ] Implement delete functionality
-  - Show confirmation dialog (use shadcn/ui dialog)
+- [x] Implement delete functionality
+  - Show confirmation dialog (use shadcn/ui AlertDialog)
   - Remove clip from store
-  - Show success toast
 
-### 7.4 Clip Visualization
+### 7.4 Clip Visualization ✅
 
-- [ ] Add visual indicators
+- [x] Add visual indicators
   - Timeline markers for each clip
   - Color-coded clips
-  - Active/selected clip highlight
-- [ ] Add preview functionality
-  - Click to preview clip
-  - Jump to clip start time
-  - Highlight crop area for clip
+  - Click to jump to clip start time
+- [x] Create `components/editor/TimelineMarkers.tsx`
+  - Display clips on timeline
+  - Interactive preview functionality
 
 ## Phase 8: Main Editor Layout
 
@@ -391,99 +388,3 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
   - `useCropFrame()` - crop frame state only
   - `useClips()` - clips array and actions
 - [ ] Optimize re-renders with shallow equality checks
-
-## Phase 10: Error Handling and Validation
-
-### 10.1 Input Validation
-
-- [ ] Validate YouTube URL format
-  - Show inline error messages
-  - Clear errors on valid input
-- [ ] Validate clip timestamps
-  - Ensure start < end
-  - Ensure timestamps within video duration
-  - Ensure minimum clip duration (e.g., 1 second)
-  - Show validation errors below inputs
-
-### 10.2 Error States
-
-- [ ] Create `components/editor/ErrorMessage.tsx`
-  - Generic error display component
-  - Retry action button
-  - Dismiss button
-- [ ] Handle YouTube Player errors
-  - Video not available
-  - Embedding disabled
-  - Age-restricted content
-  - Network errors
-- [ ] Create error boundaries
-  - Wrap main editor in error boundary
-  - Fallback UI for crashes
-  - Error logging
-
-### 10.3 Loading States
-
-- [ ] Create loading skeletons
-  - Video player loading skeleton
-  - Clips list loading skeleton
-  - Timeline controls skeleton
-- [ ] Add loading indicators
-  - Video loading spinner
-  - Clip thumbnail loading
-  - Action button loading states
-
-## Phase 11: UI Polish and UX Enhancements
-
-### 11.1 Animations and Transitions
-
-- [ ] Add smooth transitions
-  - Crop frame drag/resize animations
-  - Sidebar slide animations
-  - Clip list item animations
-  - Button hover/active states
-- [ ] Add micro-interactions
-  - Button click feedback
-  - Input focus animations
-  - Success/error toast animations
-
-### 11.2 Keyboard Shortcuts
-
-- [ ] Implement keyboard shortcuts
-  - Space: Play/pause
-  - Left/Right arrows: Skip backward/forward
-  - I: Set clip start (In point)
-  - O: Set clip end (Out point)
-  - Enter: Add clip
-  - Delete: Remove selected clip
-- [ ] Create keyboard shortcuts help modal
-  - Show all available shortcuts
-  - Accessible via `?` key
-
-### 11.3 Accessibility
-
-- [ ] Add ARIA labels to all interactive elements
-- [ ] Ensure keyboard navigation works
-  - Tab order makes sense
-  - Focus visible indicators
-  - Skip links for screen readers
-- [ ] Add screen reader announcements
-  - Clip added/removed announcements
-  - Playback state changes
-  - Error messages
-- [ ] Ensure color contrast meets WCAG AA standards
-
-### 11.4 Visual Design
-
-- [ ] Design crop frame styling
-  - Clean border design
-  - Clear handle indicators
-  - Professional overlay mask
-- [ ] Design timeline controls
-  - Modern progress bar
-  - Clear time display
-  - Icon buttons for actions
-- [ ] Design clips sidebar
-  - Card-based clip items
-  - Thumbnail with overlay info
-  - Clear action buttons
-- [ ] Apply consistent spacing and typography

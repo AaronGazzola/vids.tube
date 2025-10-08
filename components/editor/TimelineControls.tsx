@@ -6,6 +6,7 @@ import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTimelineControls } from "./TimelineControls.hooks";
 import type { TimelineControlsProps } from "./TimelineControls.types";
+import { TimelineMarkers } from "./TimelineMarkers";
 
 export function TimelineControls({ className }: TimelineControlsProps) {
   const {
@@ -27,6 +28,7 @@ export function TimelineControls({ className }: TimelineControlsProps) {
         onClick={handleSeek}
         className="relative h-2 bg-gray-200 rounded-full cursor-pointer group"
       >
+        <TimelineMarkers />
         <div
           className="absolute h-full bg-blue-500 rounded-full transition-all"
           style={{ width: `${progress}%` }}
