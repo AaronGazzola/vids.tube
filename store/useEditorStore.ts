@@ -1,23 +1,12 @@
 import { create } from 'zustand';
 import { extractVideoId } from '@/lib/youtube';
+import { Clip } from '@/lib/clip.types';
 
 interface CropPosition {
   x: number;
   y: number;
   width: number;
   height: number;
-}
-
-interface Clip {
-  id: string;
-  startTime: number;
-  endTime: number;
-  duration: number;
-  cropX: number;
-  cropY: number;
-  cropWidth: number;
-  cropHeight: number;
-  createdAt: number;
 }
 
 interface EditorStore {
