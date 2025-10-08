@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { extractVideoId } from '@/lib/youtube';
 
 interface CropPosition {
   x: number;
@@ -60,7 +61,10 @@ export const useEditorStore = create<EditorStore>((set) => ({
   cropFrame: DEFAULT_CROP_FRAME,
   clips: [],
 
-  setVideoUrl: (url) => set({ videoUrl: url }),
+  setVideoUrl: (url) => {
+    const videoId = extractVideoId(url);
+    set({ videoUrl: url, videoId });
+  },
   clearVideo: () => set({ videoUrl: null, videoId: null }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentTime: (time) => set({ currentTime: time }),

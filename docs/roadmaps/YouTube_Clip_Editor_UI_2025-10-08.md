@@ -30,41 +30,41 @@ This roadmap focuses exclusively on the frontend UI implementation for the YouTu
 - [x] Create `components/editor/` directory for editor components
 - [x] Create `app/editor/` directory for editor page
 
-## Phase 2: YouTube URL Input and Validation
+## Phase 2: YouTube URL Input and Validation ✅
 
-### 2.1 YouTube Utility Functions
+### 2.1 YouTube Utility Functions ✅
 
-- [ ] Implement `extractVideoId(url: string): string | null` in `lib/youtube.ts`
+- [x] Implement `extractVideoId(url: string): string | null` in `lib/youtube.ts`
   - Extract video ID from various YouTube URL formats
   - Support youtube.com, youtu.be, with/without www
   - Support with/without query parameters
-- [ ] Implement `isValidYouTubeUrl(url: string): boolean` in `lib/youtube.ts`
+- [x] Implement `isValidYouTubeUrl(url: string): boolean` in `lib/youtube.ts`
   - Validate URL format using regex
   - Return boolean for valid/invalid URLs
-- [ ] Create `YouTubeUrlSchema` type in `lib/youtube.types.ts`
+- [x] Create `YouTubeUrlSchema` type in `lib/youtube.types.ts`
   - Define interface for parsed YouTube URL data
 
-### 2.2 Video Input Component
+### 2.2 Video Input Component ✅
 
-- [ ] Create `components/editor/VideoInput.tsx`
+- [x] Create `components/editor/VideoInput.tsx`
   - Text input field for YouTube URL
   - Paste button with clipboard API integration
   - Clear/reset button
   - Loading state indicator
-- [ ] Create `components/editor/VideoInput.hooks.tsx`
+- [x] Create `components/editor/VideoInput.hooks.tsx`
   - `useVideoInput()` hook for managing input state
   - URL validation on blur/submit
   - Error handling for invalid URLs
-- [ ] Create `components/editor/VideoInput.types.ts`
+- [x] Create `components/editor/VideoInput.types.ts`
   - Define component prop types
   - Define input state interface
 
-### 2.3 Integration with Store
+### 2.3 Integration with Store ✅
 
-- [ ] Add `videoUrl` to Zustand store
-- [ ] Add `videoId` to Zustand store
-- [ ] Add `setVideoUrl(url: string)` action to store
-- [ ] Add `clearVideo()` action to store
+- [x] Add `videoUrl` to Zustand store
+- [x] Add `videoId` to Zustand store
+- [x] Add `setVideoUrl(url: string)` action to store
+- [x] Add `clearVideo()` action to store
 
 ## Phase 3: YouTube Player Integration
 
