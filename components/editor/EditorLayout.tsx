@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { EditorLayoutProps, EditorSidebarProps } from './EditorLayout.types';
-import { cn } from '@/lib/shadcn.utils';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { EditorLayoutProps, EditorSidebarProps } from "./EditorLayout.types";
 
 function EditorHeader() {
   return (
@@ -35,9 +35,7 @@ function EditorSidebar({ isOpen, onToggle, children }: EditorSidebarProps) {
           isOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="p-4 pt-16 lg:pt-4">
-          {children}
-        </div>
+        <div className="p-4 pt-16 lg:pt-4">{children}</div>
       </aside>
 
       {isOpen && (
@@ -60,27 +58,25 @@ export function EditorLayout({ children }: EditorLayoutProps) {
       }
     };
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
     if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [sidebarOpen]);
 
   return (
     <div className="flex flex-col h-screen">
       <EditorHeader />
-      <div className="flex-1 flex overflow-hidden">
-        {children}
-      </div>
+      <div className="flex-1 flex overflow-hidden">{children}</div>
     </div>
   );
 }

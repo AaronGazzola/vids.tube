@@ -1,13 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatTime } from "@/lib/time.utils";
+import { cn } from "@/lib/utils";
 import { useClipCreator } from "./ClipCreator.hooks";
 import { ClipCreatorProps } from "./ClipCreator.types";
-import { formatTime } from "@/lib/time.utils";
-import { cn } from "@/lib/shadcn.utils";
 
 export function ClipCreator({ className }: ClipCreatorProps) {
   const {
@@ -45,7 +45,10 @@ export function ClipCreator({ className }: ClipCreatorProps) {
               min="0"
               className="flex-1"
             />
-            <Button onClick={setStartToCurrentTime} variant="outline">
+            <Button
+              onClick={setStartToCurrentTime}
+              variant="outline"
+            >
               Set Start
             </Button>
           </div>
@@ -69,7 +72,10 @@ export function ClipCreator({ className }: ClipCreatorProps) {
               min="0"
               className="flex-1"
             />
-            <Button onClick={setEndToCurrentTime} variant="outline">
+            <Button
+              onClick={setEndToCurrentTime}
+              variant="outline"
+            >
               Set End
             </Button>
           </div>
@@ -90,7 +96,10 @@ export function ClipCreator({ className }: ClipCreatorProps) {
         {validationErrors.length > 0 && (
           <div className="space-y-1">
             {validationErrors.map((error, index) => (
-              <p key={index} className="text-sm text-destructive">
+              <p
+                key={index}
+                className="text-sm text-destructive"
+              >
                 {error.message}
               </p>
             ))}
@@ -105,7 +114,10 @@ export function ClipCreator({ className }: ClipCreatorProps) {
           >
             Add Clip
           </Button>
-          <Button onClick={resetClip} variant="outline">
+          <Button
+            onClick={resetClip}
+            variant="outline"
+          >
             Reset
           </Button>
         </div>

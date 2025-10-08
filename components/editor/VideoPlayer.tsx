@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { CropFrame } from "./CropFrame";
 import { useYouTubePlayer } from "./VideoPlayer.hooks";
 import { VideoPlayerProps } from "./VideoPlayer.types";
-import { CropFrame } from "./CropFrame";
 
 export const VideoPlayer = ({
   videoId,
@@ -40,7 +40,10 @@ export const VideoPlayer = ({
 
   return (
     <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
-      <div ref={containerRef} className="absolute inset-0" />
+      <div
+        ref={containerRef}
+        className="absolute inset-0"
+      />
       {dimensions.width > 0 && dimensions.height > 0 && (
         <CropFrame
           containerWidth={dimensions.width}

@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Don't include any comments in any files.
 - All errors should be thrown - never include any "Fallback" functionality
-- Import "cn" from "@/lib/shadcn.utils" to concatinate classes.
+- Import "cn" from "@/lib/utils" to concatinate classes.
 - All console.logs should be stringified and minified.
 
 # File Organization and Naming Conventions

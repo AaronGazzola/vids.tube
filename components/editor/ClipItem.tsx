@@ -1,12 +1,5 @@
 "use client";
 
-import { ClipItemProps } from "./ClipItem.types";
-import { useClipItem } from "./ClipItem.hooks";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { formatTime } from "@/lib/time.utils";
-import { Pencil, Trash2, GripVertical } from "lucide-react";
-import { cn } from "@/lib/shadcn.utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,8 +11,15 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { formatTime } from "@/lib/time.utils";
+import { cn } from "@/lib/utils";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import { useClipItem } from "./ClipItem.hooks";
+import { ClipItemProps } from "./ClipItem.types";
 
 export function ClipItem({ clipId, index }: ClipItemProps) {
   const { clip, handleEdit, handleDelete, thumbnailUrl } = useClipItem(clipId);
@@ -70,7 +70,10 @@ export function ClipItem({ clipId, index }: ClipItemProps) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium">Clip {index + 1}</span>
-          <Badge variant="secondary" className="text-xs">
+          <Badge
+            variant="secondary"
+            className="text-xs"
+          >
             {formatTime(clip.duration)}
           </Badge>
         </div>
@@ -106,12 +109,16 @@ export function ClipItem({ clipId, index }: ClipItemProps) {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete Clip</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to delete Clip {index + 1}? This action cannot be undone.
+                Are you sure you want to delete Clip {index + 1}? This action
+                cannot be undone.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <AlertDialogAction
+                onClick={handleDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
                 Delete
               </AlertDialogAction>
             </AlertDialogFooter>

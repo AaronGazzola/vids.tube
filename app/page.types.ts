@@ -1,5 +1,3 @@
-export interface EditorPageProps {}
-
 export interface EditorLayoutConfig {
   showSidebar: boolean;
   sidebarWidth: number;

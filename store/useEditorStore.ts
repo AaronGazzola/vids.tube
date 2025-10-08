@@ -127,6 +127,7 @@ export const useEditorStore = create<EditorStore>()(
 }),
     {
       name: 'editor-storage',
+      version: 1,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         videoUrl: state.videoUrl,
@@ -134,6 +135,12 @@ export const useEditorStore = create<EditorStore>()(
         clips: state.clips,
         cropFrame: state.cropFrame,
       }),
+      migrate: (persistedState: any, version: number) => {
+        if (version === 0) {
+          return persistedState;
+        }
+        return persistedState;
+      },
     }
   )
 );

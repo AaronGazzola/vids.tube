@@ -1,26 +1,25 @@
 "use client";
 
-import { useEditorStore } from "@/store/useEditorStore";
-import { ClipsListProps } from "./ClipsList.types";
-import { ClipItem } from "./ClipItem";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { cn } from "@/lib/shadcn.utils";
+import { cn } from "@/lib/utils";
+import { useEditorStore } from "@/store/useEditorStore";
 import {
-  DndContext,
   closestCenter,
+  DndContext,
+  DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { ClipItem } from "./ClipItem";
+import { ClipsListProps } from "./ClipsList.types";
 
 export function ClipsList({ className }: ClipsListProps) {
   const clips = useEditorStore((state) => state.clips);
@@ -50,9 +49,7 @@ export function ClipsList({ className }: ClipsListProps) {
   return (
     <div className={cn("flex flex-col h-full border rounded-lg", className)}>
       <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-lg font-semibold">
-          Clips ({clips.length})
-        </h2>
+        <h2 className="text-lg font-semibold">Clips ({clips.length})</h2>
         {clips.length > 0 && (
           <Button
             variant="outline"
@@ -67,7 +64,9 @@ export function ClipsList({ className }: ClipsListProps) {
       <ScrollArea className="flex-1">
         {clips.length === 0 ? (
           <div className="flex items-center justify-center h-full p-8 text-center text-muted-foreground">
-            <p>No clips yet. Create your first clip using the timeline controls.</p>
+            <p>
+              No clips yet. Create your first clip using the timeline controls.
+            </p>
           </div>
         ) : (
           <DndContext

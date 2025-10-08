@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/shadcn.utils";
-import { formatTime } from "@/lib/time.utils";
-import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatTime } from "@/lib/time.utils";
+import { cn } from "@/lib/utils";
+import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { useTimelineControls } from "./TimelineControls.hooks";
 import type { TimelineControlsProps } from "./TimelineControls.types";
 import { TimelineMarkers } from "./TimelineMarkers";
