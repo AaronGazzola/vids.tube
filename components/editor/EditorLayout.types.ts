@@ -4,7 +4,7 @@ export interface EditorLayoutProps {
   children: ReactNode;
 }
 
-export interface EditorHeaderProps {}
+export type EditorHeaderProps = Record<string, never>;
 
 export interface EditorSidebarProps {
   isOpen: boolean;

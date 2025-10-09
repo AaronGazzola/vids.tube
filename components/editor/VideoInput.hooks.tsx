@@ -21,7 +21,7 @@ export function useVideoInput() {
     try {
       const text = await navigator.clipboard.readText();
       handleUrlChange(text);
-    } catch (error) {
+    } catch {
       setState((prev) => ({
         ...prev,
         error: 'Failed to read clipboard',

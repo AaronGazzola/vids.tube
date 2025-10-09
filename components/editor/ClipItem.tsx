@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useClipItem } from "./ClipItem.hooks";
 import { ClipItemProps } from "./ClipItem.types";
 
@@ -57,12 +58,13 @@ export function ClipItem({ clipId, index }: ClipItemProps) {
         <GripVertical className="w-4 h-4" />
       </div>
 
-      <div className="flex-shrink-0 w-20 h-12 bg-muted rounded overflow-hidden">
+      <div className="flex-shrink-0 w-20 h-12 bg-muted rounded overflow-hidden relative">
         {thumbnailUrl && (
-          <img
+          <Image
             src={thumbnailUrl}
             alt={`Clip ${index + 1}`}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
           />
         )}
       </div>

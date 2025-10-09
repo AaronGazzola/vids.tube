@@ -1,6 +1,5 @@
 import { useEditorStore } from "@/store/useEditorStore";
 import { useCallback, useRef } from "react";
-import type { SeekEvent } from "./TimelineControls.types";
 
 export function useTimelineControls() {
   const progressBarRef = useRef<HTMLDivElement>(null);
