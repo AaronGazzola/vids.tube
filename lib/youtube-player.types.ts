@@ -18,6 +18,12 @@ export interface PlayerErrorEvent {
   data: number;
 }
 
+export interface VideoData {
+  video_id: string;
+  title: string;
+  author: string;
+}
+
 export interface YouTubePlayer {
   playVideo: () => void;
   pauseVideo: () => void;
@@ -31,6 +37,8 @@ export interface YouTubePlayer {
   unMute: () => void;
   isMuted: () => boolean;
   destroy: () => void;
+  getVideoData: () => VideoData;
+  getIframe: () => HTMLIFrameElement;
 }
 
 export interface PlayerConfig {

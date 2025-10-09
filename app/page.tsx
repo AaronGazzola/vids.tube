@@ -3,7 +3,6 @@
 import { ClipCreator } from "@/components/editor/ClipCreator";
 import { ClipsList } from "@/components/editor/ClipsList";
 import { EditorLayout } from "@/components/editor/EditorLayout";
-import { TimelineControls } from "@/components/editor/TimelineControls";
 import { VideoInput } from "@/components/editor/VideoInput";
 import { VideoPlayer } from "@/components/editor/VideoPlayer";
 import { useEditorStore } from "@/store/useEditorStore";
@@ -22,15 +21,7 @@ export default function EditorPage() {
         <div className="max-w-7xl mx-auto w-full space-y-6">
           <VideoInput />
 
-          {videoId && (
-            <>
-              <div className="relative bg-black rounded-lg overflow-hidden aspect-video">
-                {videoId && <VideoPlayer videoId={videoId} />}
-              </div>
-
-              <TimelineControls />
-            </>
-          )}
+          {videoId && <VideoPlayer videoId={videoId} />}
         </div>
       </main>
 

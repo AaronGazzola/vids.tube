@@ -9,6 +9,7 @@ import {
   PlayerErrorEvent,
 } from "@/lib/youtube-player.types";
 import { VideoPlayerProps } from "./VideoPlayer.types";
+import { useEditorStore } from "@/store/useEditorStore";
 
 export const useYouTubePlayer = ({
   videoId,
@@ -19,6 +20,7 @@ export const useYouTubePlayer = ({
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [isReady, setIsReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { setCurrentTime, setDuration, setIsPlaying, setVideoDimensions } = useEditorStore();
 
   useEffect(() => {
     if (!videoId || !containerRef.current) return;
@@ -46,10 +48,35 @@ export const useYouTubePlayer = ({
         events: {
           onReady: (event: PlayerReadyEvent) => {
             setIsReady(true);
+            const duration = event.target.getDuration();
+            setDuration(duration);
+
+            const iframe = event.target.getIframe();
+            if (iframe) {
+              const iframeWidth = iframe.clientWidth;
+              const iframeHeight = iframe.clientHeight;
+              const videoAspectRatio = 16 / 9;
+              const containerAspectRatio = iframeWidth / iframeHeight;
+
+              let videoWidth: number;
+              let videoHeight: number;
+
+              if (containerAspectRatio > videoAspectRatio) {
+                videoHeight = iframeHeight;
+                videoWidth = videoHeight * videoAspectRatio;
+              } else {
+                videoWidth = iframeWidth;
+                videoHeight = videoWidth / videoAspectRatio;
+              }
+
+              setVideoDimensions(Math.round(videoWidth), Math.round(videoHeight));
+            }
+
             onReady?.(event.target);
           },
           onStateChange: (event: PlayerStateChangeEvent) => {
             const state: PlayerState = PlayerStateMap[event.data];
+            setIsPlaying(state === "playing");
             onStateChange?.(state);
           },
           onError: (event: PlayerErrorEvent) => {
@@ -70,48 +97,24 @@ export const useYouTubePlayer = ({
       }
       setIsReady(false);
     };
-  }, [videoId, onReady, onStateChange, onError]);
+  }, [videoId, onReady, onStateChange, onError, setDuration, setIsPlaying, setVideoDimensions]);
 
-  const play = () => {
-    if (playerRef.current && isReady) {
-      playerRef.current.playVideo();
-    }
-  };
+  useEffect(() => {
+    if (!playerRef.current || !isReady) return;
 
-  const pause = () => {
-    if (playerRef.current && isReady) {
-      playerRef.current.pauseVideo();
-    }
-  };
+    const interval = setInterval(() => {
+      if (playerRef.current) {
+        const currentTime = playerRef.current.getCurrentTime();
+        setCurrentTime(currentTime);
+      }
+    }, 100);
 
-  const seekTo = (seconds: number) => {
-    if (playerRef.current && isReady) {
-      playerRef.current.seekTo(seconds, true);
-    }
-  };
-
-  const getCurrentTime = (): number => {
-    if (playerRef.current && isReady) {
-      return playerRef.current.getCurrentTime();
-    }
-    return 0;
-  };
-
-  const getDuration = (): number => {
-    if (playerRef.current && isReady) {
-      return playerRef.current.getDuration();
-    }
-    return 0;
-  };
+    return () => clearInterval(interval);
+  }, [isReady, setCurrentTime]);
 
   return {
     containerRef,
     player: playerRef.current,
     isReady,
-    play,
-    pause,
-    seekTo,
-    getCurrentTime,
-    getDuration,
   };
 };

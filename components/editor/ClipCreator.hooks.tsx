@@ -1,13 +1,14 @@
 import { useState, useCallback } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { ValidationError } from './ClipCreator.types';
+import { convertToVideoCoordinates } from './VideoPlayer.utils';
 
 export const useClipCreator = () => {
   const [startTime, setStartTime] = useState<number | null>(null);
   const [endTime, setEndTime] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
-  const { currentTime, duration, cropFrame, addClip } = useEditorStore();
+  const { currentTime, duration, cropFrame, videoBounds, addClip } = useEditorStore();
 
   const setStartToCurrentTime = useCallback(() => {
     setStartTime(currentTime);
@@ -50,24 +51,32 @@ export const useClipCreator = () => {
   }, [startTime, endTime, duration]);
 
   const handleAddClip = useCallback(() => {
-    if (!validateClip() || startTime === null || endTime === null) {
+    if (!validateClip() || startTime === null || endTime === null || !videoBounds) {
       return;
     }
+
+    const videoCoords = convertToVideoCoordinates(
+      cropFrame.x,
+      cropFrame.y,
+      cropFrame.width,
+      cropFrame.height,
+      videoBounds
+    );
 
     addClip({
       startTime,
       endTime,
       duration: endTime - startTime,
-      cropX: cropFrame.x,
-      cropY: cropFrame.y,
-      cropWidth: cropFrame.width,
-      cropHeight: cropFrame.height,
+      cropX: videoCoords.x,
+      cropY: videoCoords.y,
+      cropWidth: videoCoords.width,
+      cropHeight: videoCoords.height,
     });
 
     setStartTime(null);
     setEndTime(null);
     setValidationErrors([]);
-  }, [validateClip, startTime, endTime, cropFrame, addClip]);
+  }, [validateClip, startTime, endTime, cropFrame, videoBounds, addClip]);
 
   const resetClip = useCallback(() => {
     setStartTime(null);

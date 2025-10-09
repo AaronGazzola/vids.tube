@@ -7,7 +7,7 @@ export function useClipItem(clipId: string): UseClipItemReturn {
   );
   const removeClip = useEditorStore((state) => state.removeClip);
   const setCropFrame = useEditorStore((state) => state.setCropFrame);
-  const seekTo = useEditorStore((state) => state.seekTo);
+  const setCurrentTime = useEditorStore((state) => state.setCurrentTime);
   const videoId = useEditorStore((state) => state.videoId);
 
   const handleEdit = () => {
@@ -20,7 +20,7 @@ export function useClipItem(clipId: string): UseClipItemReturn {
       height: clip.cropHeight,
     });
 
-    seekTo(clip.startTime);
+    setCurrentTime(clip.startTime);
   };
 
   const handleDelete = () => {

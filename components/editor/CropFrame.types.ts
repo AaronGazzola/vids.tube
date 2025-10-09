@@ -42,7 +42,15 @@ export type ResizeHandle =
   | "s"
   | "w";
 
+export interface VideoBounds {
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  height: number;
+}
+
 export interface CropFrameProps {
   containerWidth: number;
   containerHeight: number;
+  videoBounds: VideoBounds;
 }

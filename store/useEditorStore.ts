@@ -10,12 +10,22 @@ interface CropPosition {
   height: number;
 }
 
+interface VideoBounds {
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  height: number;
+}
+
 interface EditorStore {
   videoUrl: string | null;
   videoId: string | null;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
+  videoWidth: number;
+  videoHeight: number;
+  videoBounds: VideoBounds | null;
   cropFrame: CropPosition;
   clips: Clip[];
   setVideoUrl: (url: string) => void;
@@ -23,6 +33,8 @@ interface EditorStore {
   setIsPlaying: (playing: boolean) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
+  setVideoDimensions: (width: number, height: number) => void;
+  setVideoBounds: (bounds: VideoBounds) => void;
   setCropFrame: (position: CropPosition) => void;
   resetCropFrame: () => void;
   addClip: (clip: Omit<Clip, "id" | "createdAt">) => void;
@@ -30,10 +42,6 @@ interface EditorStore {
   updateClip: (id: string, updates: Partial<Clip>) => void;
   reorderClips: (startIndex: number, endIndex: number) => void;
   clearClips: () => void;
-  togglePlayback: () => void;
-  seekTo: (time: number) => void;
-  skipForward: (seconds: number) => void;
-  skipBackward: (seconds: number) => void;
   resetEditor: () => void;
 }
 
@@ -52,6 +60,9 @@ export const useEditorStore = create<EditorStore>()(
   isPlaying: false,
   currentTime: 0,
   duration: 0,
+  videoWidth: 1920,
+  videoHeight: 1080,
+  videoBounds: null,
   cropFrame: DEFAULT_CROP_FRAME,
   clips: [],
 
@@ -63,6 +74,8 @@ export const useEditorStore = create<EditorStore>()(
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (duration) => set({ duration }),
+  setVideoDimensions: (width, height) => set({ videoWidth: width, videoHeight: height }),
+  setVideoBounds: (bounds) => set({ videoBounds: bounds }),
   setCropFrame: (position) => set({ cropFrame: position }),
   resetCropFrame: () => set({ cropFrame: DEFAULT_CROP_FRAME }),
 
@@ -100,20 +113,6 @@ export const useEditorStore = create<EditorStore>()(
 
   clearClips: () => set({ clips: [] }),
 
-  togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
-
-  seekTo: (time) => set({ currentTime: time }),
-
-  skipForward: (seconds: number) =>
-    set((state) => ({
-      currentTime: Math.min(state.currentTime + seconds, state.duration),
-    })),
-
-  skipBackward: (seconds: number) =>
-    set((state) => ({
-      currentTime: Math.max(state.currentTime - seconds, 0),
-    })),
-
   resetEditor: () =>
     set({
       videoUrl: null,
@@ -121,6 +120,9 @@ export const useEditorStore = create<EditorStore>()(
       isPlaying: false,
       currentTime: 0,
       duration: 0,
+      videoWidth: 1920,
+      videoHeight: 1080,
+      videoBounds: null,
       cropFrame: DEFAULT_CROP_FRAME,
       clips: [],
     }),
@@ -161,10 +163,6 @@ export const usePlaybackState = () =>
     setIsPlaying: state.setIsPlaying,
     setCurrentTime: state.setCurrentTime,
     setDuration: state.setDuration,
-    togglePlayback: state.togglePlayback,
-    seekTo: state.seekTo,
-    skipForward: state.skipForward,
-    skipBackward: state.skipBackward,
   }));
 
 export const useCropFrame = () =>

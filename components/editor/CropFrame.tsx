@@ -8,18 +8,18 @@ import { useEditorStore } from "@/store/useEditorStore";
 
 const RESIZE_HANDLES: ResizeHandle[] = ["nw", "ne", "sw", "se", "n", "e", "s", "w"];
 
-export const CropFrame = ({ containerWidth, containerHeight }: CropFrameProps) => {
+export const CropFrame = ({ videoBounds }: CropFrameProps) => {
   const { cropFrame } = useEditorStore();
 
   const bounds: CropFrameBounds = {
-    minX: 0,
-    minY: 0,
-    maxX: containerWidth,
-    maxY: containerHeight,
+    minX: videoBounds.offsetX,
+    minY: videoBounds.offsetY,
+    maxX: videoBounds.offsetX + videoBounds.width,
+    maxY: videoBounds.offsetY + videoBounds.height,
     minWidth: 100,
     minHeight: 177,
-    maxWidth: containerWidth,
-    maxHeight: containerHeight,
+    maxWidth: videoBounds.width,
+    maxHeight: videoBounds.height,
   };
 
   const { isDragging, handleMouseDown, handleMouseMove, handleMouseUp } = useDragFrame(bounds);
@@ -86,10 +86,10 @@ export const CropFrame = ({ containerWidth, containerHeight }: CropFrameProps) =
   };
 
   return (
-    <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1000 }}>
       <svg
         className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ zIndex: 10 }}
+        style={{ zIndex: 1001 }}
       >
         <defs>
           <mask id="crop-mask">
@@ -120,7 +120,7 @@ export const CropFrame = ({ containerWidth, containerHeight }: CropFrameProps) =
           top: `${cropFrame.y}px`,
           width: `${cropFrame.width}px`,
           height: `${cropFrame.height}px`,
-          zIndex: 20,
+          zIndex: 1002,
         }}
         onMouseDown={handleMouseDown}
       >
