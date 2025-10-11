@@ -31,16 +31,14 @@ export const PlaybackControls = () => {
     }
   };
 
-  const handleSeekStart = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSeekChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setIsSeeking(true);
     setSeekValue(Number(e.target.value));
   };
 
-  const handleSeekEnd = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSeekCommit = () => {
     if (!playerInstance) return;
-    const time = Number(e.target.value);
-    playerInstance.seekTo(time, true);
-    setSeekValue(time);
+    playerInstance.seekTo(seekValue, true);
     setIsSeeking(false);
   };
 
@@ -95,9 +93,9 @@ export const PlaybackControls = () => {
           max={duration}
           step={0.1}
           value={seekValue}
-          onChange={handleSeekStart}
-          onMouseUp={handleSeekEnd}
-          onTouchEnd={handleSeekEnd}
+          onChange={handleSeekChange}
+          onMouseUp={handleSeekCommit}
+          onTouchEnd={handleSeekCommit}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
         <div
