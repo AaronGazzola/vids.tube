@@ -65,8 +65,8 @@ export const VideoPlayer = ({
     <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
       <div
         ref={containerRef}
-        className="absolute inset-0"
-        style={{ pointerEvents: "none", zIndex: -1 }}
+        className="absolute inset-0 [&_iframe]:pointer-events-none"
+        style={{ zIndex: -1 }}
       />
 
       {videoBounds && (

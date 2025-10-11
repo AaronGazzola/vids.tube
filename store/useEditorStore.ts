@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { extractVideoId } from '@/lib/youtube';
 import { Clip } from '@/lib/clip.types';
+import { YouTubePlayer } from '@/lib/youtube-player.types';
 
 interface CropPosition {
   x: number;
@@ -28,6 +29,7 @@ interface EditorStore {
   videoBounds: VideoBounds | null;
   cropFrame: CropPosition;
   clips: Clip[];
+  playerInstance: YouTubePlayer | null;
   setVideoUrl: (url: string) => void;
   clearVideo: () => void;
   setIsPlaying: (playing: boolean) => void;
@@ -43,6 +45,7 @@ interface EditorStore {
   reorderClips: (startIndex: number, endIndex: number) => void;
   clearClips: () => void;
   resetEditor: () => void;
+  setPlayerInstance: (player: YouTubePlayer | null) => void;
 }
 
 const DEFAULT_CROP_FRAME: CropPosition = {
@@ -65,6 +68,7 @@ export const useEditorStore = create<EditorStore>()(
   videoBounds: null,
   cropFrame: DEFAULT_CROP_FRAME,
   clips: [],
+  playerInstance: null,
 
   setVideoUrl: (url) => {
     const videoId = extractVideoId(url);
@@ -78,6 +82,7 @@ export const useEditorStore = create<EditorStore>()(
   setVideoBounds: (bounds) => set({ videoBounds: bounds }),
   setCropFrame: (position) => set({ cropFrame: position }),
   resetCropFrame: () => set({ cropFrame: DEFAULT_CROP_FRAME }),
+  setPlayerInstance: (player) => set({ playerInstance: player }),
 
   addClip: (clip) =>
     set((state) => ({
@@ -125,6 +130,7 @@ export const useEditorStore = create<EditorStore>()(
       videoBounds: null,
       cropFrame: DEFAULT_CROP_FRAME,
       clips: [],
+      playerInstance: null,
     }),
 }),
     {

@@ -20,7 +20,7 @@ export const useYouTubePlayer = ({
   const playerRef = useRef<YouTubePlayer | null>(null);
   const [isReady, setIsReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { setCurrentTime, setDuration, setIsPlaying, setVideoDimensions } = useEditorStore();
+  const { setCurrentTime, setDuration, setIsPlaying, setVideoDimensions, setPlayerInstance } = useEditorStore();
 
   useEffect(() => {
     if (!videoId || !containerRef.current) return;
@@ -38,12 +38,15 @@ export const useYouTubePlayer = ({
         videoId,
         playerVars: {
           autoplay: 0,
-          controls: 1,
-          disablekb: 0,
+          controls: 0,
+          disablekb: 1,
           enablejsapi: 1,
-          fs: 1,
+          fs: 0,
           modestbranding: 1,
           rel: 0,
+          iv_load_policy: 3,
+          cc_load_policy: 0,
+          playsinline: 1,
         },
         events: {
           onReady: (event: PlayerReadyEvent) => {
@@ -86,6 +89,7 @@ export const useYouTubePlayer = ({
       });
 
       playerRef.current = player;
+      setPlayerInstance(player);
     };
 
     initializePlayer();
@@ -95,9 +99,10 @@ export const useYouTubePlayer = ({
         playerRef.current.destroy();
         playerRef.current = null;
       }
+      setPlayerInstance(null);
       setIsReady(false);
     };
-  }, [videoId, onReady, onStateChange, onError, setDuration, setIsPlaying, setVideoDimensions]);
+  }, [videoId, onReady, onStateChange, onError, setDuration, setIsPlaying, setVideoDimensions, setPlayerInstance]);
 
   useEffect(() => {
     if (!playerRef.current || !isReady) return;

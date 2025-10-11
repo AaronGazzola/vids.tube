@@ -5,6 +5,7 @@ import { ClipsList } from "@/components/editor/ClipsList";
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import { VideoInput } from "@/components/editor/VideoInput";
 import { VideoPlayer } from "@/components/editor/VideoPlayer";
+import { PlaybackControls } from "@/components/editor/PlaybackControls";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useState } from "react";
 import { useKeyboardShortcuts } from "./page.hooks";
@@ -21,7 +22,12 @@ export default function EditorPage() {
         <div className="max-w-7xl mx-auto w-full space-y-6">
           <VideoInput />
 
-          {videoId && <VideoPlayer videoId={videoId} />}
+          {videoId && (
+            <>
+              <VideoPlayer videoId={videoId} />
+              <PlaybackControls />
+            </>
+          )}
         </div>
       </main>
 
