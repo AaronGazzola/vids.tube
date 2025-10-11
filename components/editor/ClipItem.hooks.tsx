@@ -1,5 +1,6 @@
 import { useEditorStore } from "@/store/useEditorStore";
 import { UseClipItemReturn } from "./ClipItem.types";
+import { convertFromVideoCoordinates } from "./VideoPlayer.utils";
 
 export function useClipItem(clipId: string): UseClipItemReturn {
   const clip = useEditorStore((state) =>
@@ -7,34 +8,35 @@ export function useClipItem(clipId: string): UseClipItemReturn {
   );
   const removeClip = useEditorStore((state) => state.removeClip);
   const setCropFrame = useEditorStore((state) => state.setCropFrame);
-  const setCurrentTime = useEditorStore((state) => state.setCurrentTime);
-  const videoId = useEditorStore((state) => state.videoId);
+  const playerInstance = useEditorStore((state) => state.playerInstance);
+  const videoBounds = useEditorStore((state) => state.videoBounds);
 
   const handleEdit = () => {
     if (!clip) throw new Error("Clip not found");
+    if (!videoBounds) throw new Error("Video bounds not available");
 
-    setCropFrame({
-      x: clip.cropX,
-      y: clip.cropY,
-      width: clip.cropWidth,
-      height: clip.cropHeight,
-    });
+    const containerCoords = convertFromVideoCoordinates(
+      clip.cropX,
+      clip.cropY,
+      clip.cropWidth,
+      clip.cropHeight,
+      videoBounds
+    );
 
-    setCurrentTime(clip.startTime);
+    setCropFrame(containerCoords);
+
+    if (playerInstance) {
+      playerInstance.seekTo(clip.startTime, true);
+    }
   };
 
   const handleDelete = () => {
     removeClip(clipId);
   };
 
-  const thumbnailUrl = videoId
-    ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`
-    : "";
-
   return {
     clip,
     handleEdit,
     handleDelete,
-    thumbnailUrl,
   };
 }

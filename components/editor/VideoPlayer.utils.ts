@@ -59,3 +59,26 @@ export const convertToVideoCoordinates = (
     height: Math.round(containerHeight * scaleY),
   };
 };
+
+export const convertFromVideoCoordinates = (
+  videoX: number,
+  videoY: number,
+  videoWidth: number,
+  videoHeight: number,
+  videoBounds: VideoBounds,
+  sourceVideoWidth: number = 1920,
+  sourceVideoHeight: number = 1080
+) => {
+  const scaleX = videoBounds.width / sourceVideoWidth;
+  const scaleY = videoBounds.height / sourceVideoHeight;
+
+  const containerX = videoX * scaleX + videoBounds.offsetX;
+  const containerY = videoY * scaleY + videoBounds.offsetY;
+
+  return {
+    x: Math.round(containerX),
+    y: Math.round(containerY),
+    width: Math.round(videoWidth * scaleX),
+    height: Math.round(videoHeight * scaleY),
+  };
+};

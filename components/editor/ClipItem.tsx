@@ -17,13 +17,12 @@ import { formatTime } from "@/lib/time.utils";
 import { cn } from "@/lib/utils";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Pencil, Trash2 } from "lucide-react";
-import Image from "next/image";
+import { GripVertical, Trash2 } from "lucide-react";
 import { useClipItem } from "./ClipItem.hooks";
 import { ClipItemProps } from "./ClipItem.types";
 
 export function ClipItem({ clipId, index }: ClipItemProps) {
-  const { clip, handleEdit, handleDelete, thumbnailUrl } = useClipItem(clipId);
+  const { clip, handleEdit, handleDelete } = useClipItem(clipId);
 
   const {
     attributes,
@@ -58,18 +57,10 @@ export function ClipItem({ clipId, index }: ClipItemProps) {
         <GripVertical className="w-4 h-4" />
       </div>
 
-      <div className="flex-shrink-0 w-20 h-12 bg-muted rounded overflow-hidden relative">
-        {thumbnailUrl && (
-          <Image
-            src={thumbnailUrl}
-            alt={`Clip ${index + 1}`}
-            fill
-            className="object-cover"
-          />
-        )}
-      </div>
-
-      <div className="flex-1 min-w-0">
+      <div
+        className="flex-1 min-w-0 cursor-pointer"
+        onClick={handleEdit}
+      >
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium">Clip {index + 1}</span>
           <Badge
@@ -82,51 +73,40 @@ export function ClipItem({ clipId, index }: ClipItemProps) {
         <div className="text-xs text-muted-foreground">
           {formatTime(clip.startTime)} → {formatTime(clip.endTime)}
         </div>
-        <div className="text-xs text-muted-foreground">
-          Crop: {clip.cropWidth}×{clip.cropHeight}
+        <div className="text-xs text-muted-foreground font-mono">
+          Crop: x{clip.cropX}, y{clip.cropY}, {clip.cropWidth}×{clip.cropHeight}
         </div>
       </div>
 
-      <div className="flex items-center gap-1">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={handleEdit}
-        >
-          <Pencil className="h-4 w-4" />
-        </Button>
-
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive"
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Clip</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete Clip {index + 1}? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Clip</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to delete Clip {index + 1}? This action
-                cannot be undone.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

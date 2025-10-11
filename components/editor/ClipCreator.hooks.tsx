@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useEditorStore } from '@/store/useEditorStore';
 import { ValidationError } from './ClipCreator.types';
 import { convertToVideoCoordinates } from './VideoPlayer.utils';
@@ -12,23 +12,21 @@ export const useClipCreator = () => {
 
   const setStartToCurrentTime = useCallback(() => {
     setStartTime(currentTime);
-    setValidationErrors([]);
   }, [currentTime]);
 
   const setEndToCurrentTime = useCallback(() => {
     setEndTime(currentTime);
-    setValidationErrors([]);
   }, [currentTime]);
 
-  const validateClip = useCallback((): boolean => {
+  const validateClip = useCallback((): ValidationError[] => {
     const errors: ValidationError[] = [];
 
-    if (startTime === null) {
-      errors.push({ field: 'start', message: 'Start time is required' });
+    if (startTime !== null && startTime < 0) {
+      errors.push({ field: 'start', message: 'Start time must be positive' });
     }
 
-    if (endTime === null) {
-      errors.push({ field: 'end', message: 'End time is required' });
+    if (endTime !== null && endTime > duration) {
+      errors.push({ field: 'end', message: 'End time exceeds video duration' });
     }
 
     if (startTime !== null && endTime !== null) {
@@ -37,21 +35,20 @@ export const useClipCreator = () => {
       }
 
       const clipDuration = endTime - startTime;
-      if (clipDuration <= 0) {
-        errors.push({ field: 'duration', message: 'Duration must be greater than 0' });
-      }
-
-      if (startTime < 0 || endTime > duration) {
-        errors.push({ field: 'duration', message: 'Clip must be within video duration' });
+      if (clipDuration > 180) {
+        errors.push({ field: 'duration', message: 'Duration must be 3 minutes or less' });
       }
     }
 
-    setValidationErrors(errors);
-    return errors.length === 0;
+    return errors;
   }, [startTime, endTime, duration]);
 
+  useEffect(() => {
+    setValidationErrors(validateClip());
+  }, [validateClip]);
+
   const handleAddClip = useCallback(() => {
-    if (!validateClip() || startTime === null || endTime === null || !videoBounds) {
+    if (validationErrors.length > 0 || startTime === null || endTime === null || !videoBounds) {
       return;
     }
 
@@ -75,22 +72,26 @@ export const useClipCreator = () => {
 
     setStartTime(null);
     setEndTime(null);
-    setValidationErrors([]);
-  }, [validateClip, startTime, endTime, cropFrame, videoBounds, addClip]);
+  }, [validationErrors, startTime, endTime, cropFrame, videoBounds, addClip]);
 
   const resetClip = useCallback(() => {
     setStartTime(null);
     setEndTime(null);
-    setValidationErrors([]);
   }, []);
 
   const clipDuration = startTime !== null && endTime !== null ? endTime - startTime : 0;
+
+  const getFieldErrors = useCallback((field: 'start' | 'end' | 'duration') => {
+    return validationErrors.filter(error => error.field === field);
+  }, [validationErrors]);
 
   return {
     startTime,
     endTime,
     clipDuration,
     validationErrors,
+    getFieldErrors,
+    cropFrame,
     setStartTime,
     setEndTime,
     setStartToCurrentTime,

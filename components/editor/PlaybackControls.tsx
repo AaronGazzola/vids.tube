@@ -81,7 +81,7 @@ export const PlaybackControls = () => {
   const progress = duration > 0 ? (seekValue / duration) * 100 : 0;
 
   return (
-    <div className="w-full bg-black/95 backdrop-blur-sm border border-white/10 rounded-lg p-6 space-y-4">
+    <div className="w-full space-y-4">
       <div className="relative w-full h-1 bg-white/10 rounded-full group cursor-pointer">
         <div
           className="absolute h-full bg-white rounded-full transition-all"

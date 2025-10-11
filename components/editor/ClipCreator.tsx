@@ -15,6 +15,8 @@ export function ClipCreator({ className }: ClipCreatorProps) {
     endTime,
     clipDuration,
     validationErrors,
+    getFieldErrors,
+    cropFrame,
     setStartTime,
     setEndTime,
     setStartToCurrentTime,
@@ -25,6 +27,10 @@ export function ClipCreator({ className }: ClipCreatorProps) {
 
   const hasErrors = validationErrors.length > 0;
   const canAddClip = startTime !== null && endTime !== null && !hasErrors;
+
+  const startErrors = getFieldErrors('start');
+  const endErrors = getFieldErrors('end');
+  const durationErrors = getFieldErrors('duration');
 
   return (
     <Card className={cn("w-full", className)}>
@@ -57,6 +63,14 @@ export function ClipCreator({ className }: ClipCreatorProps) {
               {formatTime(startTime)}
             </p>
           )}
+          {startErrors.map((error, index) => (
+            <p
+              key={index}
+              className="text-sm text-destructive"
+            >
+              {error.message}
+            </p>
+          ))}
         </div>
 
         <div className="space-y-2">
@@ -84,6 +98,14 @@ export function ClipCreator({ className }: ClipCreatorProps) {
               {formatTime(endTime)}
             </p>
           )}
+          {endErrors.map((error, index) => (
+            <p
+              key={index}
+              className="text-sm text-destructive"
+            >
+              {error.message}
+            </p>
+          ))}
         </div>
 
         <div className="space-y-2">
@@ -91,20 +113,22 @@ export function ClipCreator({ className }: ClipCreatorProps) {
           <p className="text-sm font-medium">
             {clipDuration > 0 ? formatTime(clipDuration) : "—"}
           </p>
+          {durationErrors.map((error, index) => (
+            <p
+              key={index}
+              className="text-sm text-destructive"
+            >
+              {error.message}
+            </p>
+          ))}
         </div>
 
-        {validationErrors.length > 0 && (
-          <div className="space-y-1">
-            {validationErrors.map((error, index) => (
-              <p
-                key={index}
-                className="text-sm text-destructive"
-              >
-                {error.message}
-              </p>
-            ))}
-          </div>
-        )}
+        <div className="space-y-2">
+          <Label>Crop Frame</Label>
+          <p className="text-xs text-muted-foreground font-mono">
+            X: {cropFrame.x}, Y: {cropFrame.y}, W: {cropFrame.width}, H: {cropFrame.height}
+          </p>
+        </div>
 
         <div className="flex gap-2">
           <Button

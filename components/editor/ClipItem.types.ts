@@ -9,5 +9,4 @@ export interface UseClipItemReturn {
   clip: Clip | undefined;
   handleEdit: () => void;
   handleDelete: () => void;
-  thumbnailUrl: string;
 }

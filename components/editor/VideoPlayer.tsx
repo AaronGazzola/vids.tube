@@ -62,7 +62,7 @@ export const VideoPlayer = ({
   }, [videoBounds, setVideoBounds]);
 
   return (
-    <div className="relative w-full aspect-video rounded-lg overflow-hidden border">
+    <div className="relative w-full aspect-video rounded-lg">
       <div
         ref={containerRef}
         className="absolute inset-0 [&_iframe]:pointer-events-none"
