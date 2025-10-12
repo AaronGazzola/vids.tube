@@ -20,20 +20,28 @@ import {
 } from "@dnd-kit/sortable";
 import { ClipItem } from "./ClipItem";
 import { ClipsListProps } from "./ClipsList.types";
+import { useCreateProject, useProcessVideo } from "@/app/page.hooks";
+import { Loader2, Play } from "lucide-react";
 
-export function ClipsList({ className }: ClipsListProps) {
+export function ClipsList({ className, disabled }: ClipsListProps) {
   const clips = useEditorStore((state) => state.clips);
   const clearClips = useEditorStore((state) => state.clearClips);
   const reorderClips = useEditorStore((state) => state.reorderClips);
+  const videoId = useEditorStore((state) => state.videoId);
+  const videoUrl = useEditorStore((state) => state.videoUrl);
+
+  const createProject = useCreateProject();
+  const processVideo = useProcessVideo();
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, { activationConstraint: { distance: disabled ? 99999 : 0 } }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
+    if (disabled) return;
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
@@ -46,8 +54,24 @@ export function ClipsList({ className }: ClipsListProps) {
     }
   };
 
+  const handleProcessVideo = async () => {
+    if (!videoId || !videoUrl || clips.length === 0) return;
+
+    const project = await createProject.mutateAsync({
+      videoId,
+      videoUrl,
+      clips,
+    });
+
+    if (project?.id) {
+      await processVideo.mutateAsync({ projectId: project.id });
+    }
+  };
+
+  const isProcessing = createProject.isPending || processVideo.isPending;
+
   return (
-    <div className={cn("flex flex-col h-full border rounded-lg", className)}>
+    <div className={cn("flex flex-col h-full border rounded-lg", disabled && "opacity-50 pointer-events-none", className)}>
       <div className="flex items-center justify-between p-4 border-b">
         <h2 className="text-lg font-semibold">Clips ({clips.length})</h2>
         {clips.length > 0 && (
@@ -55,11 +79,34 @@ export function ClipsList({ className }: ClipsListProps) {
             variant="outline"
             size="sm"
             onClick={clearClips}
+            disabled={disabled}
           >
             Clear All
           </Button>
         )}
       </div>
+
+      {clips.length > 0 && (
+        <div className="p-4 border-b">
+          <Button
+            onClick={handleProcessVideo}
+            disabled={isProcessing || disabled}
+            className="w-full"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2" />
+                Process & Download Video
+              </>
+            )}
+          </Button>
+        </div>
+      )}
 
       <ScrollArea className="flex-1">
         {clips.length === 0 ? (

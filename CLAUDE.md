@@ -8,7 +8,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **TypeScript** for type safety
 - **TailwindCSS v4** for styling
 - **PostgreSQL** database with Prisma ORM
-- **Better Auth** for authentication system
 
 # General rules:
 

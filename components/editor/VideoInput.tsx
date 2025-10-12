@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useVideoInput } from './VideoInput.hooks';
 import type { VideoInputProps } from './VideoInput.types';
 
-export function VideoInput({ className }: VideoInputProps) {
+export function VideoInput({ className, disabled }: VideoInputProps) {
   const {
     state,
     handleUrlChange,
@@ -17,7 +17,7 @@ export function VideoInput({ className }: VideoInputProps) {
   } = useVideoInput();
 
   return (
-    <div className={cn('flex flex-col gap-2', className)}>
+    <div className={cn('flex flex-col gap-2', disabled && 'opacity-50 pointer-events-none', className)}>
       <div className="flex gap-2">
         <Input
           type="text"
@@ -31,19 +31,20 @@ export function VideoInput({ className }: VideoInputProps) {
             }
           }}
           className="flex-1"
+          disabled={disabled}
         />
-        <Button onClick={handlePaste} variant="outline" type="button">
+        <Button onClick={handlePaste} variant="outline" type="button" disabled={disabled}>
           Paste
         </Button>
         <Button
           onClick={handleSubmit}
-          disabled={state.isLoading || !state.url.trim()}
+          disabled={disabled || state.isLoading || !state.url.trim()}
           type="button"
         >
           {state.isLoading ? 'Loading...' : 'Load'}
         </Button>
         {state.url && (
-          <Button onClick={handleClear} variant="destructive" type="button">
+          <Button onClick={handleClear} variant="destructive" type="button" disabled={disabled}>
             Clear
           </Button>
         )}

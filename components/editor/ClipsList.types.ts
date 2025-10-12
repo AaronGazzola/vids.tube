@@ -1,5 +1,6 @@
 export interface ClipsListProps {
   className?: string;
+  disabled?: boolean;
 }
 
 export interface ClipItemProps {

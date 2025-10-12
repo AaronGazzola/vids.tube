@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { useClipCreator } from "./ClipCreator.hooks";
 import { ClipCreatorProps } from "./ClipCreator.types";
 
-export function ClipCreator({ className }: ClipCreatorProps) {
+export function ClipCreator({ className, disabled }: ClipCreatorProps) {
   const {
     startTime,
     endTime,
@@ -33,7 +33,7 @@ export function ClipCreator({ className }: ClipCreatorProps) {
   const durationErrors = getFieldErrors('duration');
 
   return (
-    <Card className={cn("w-full", className)}>
+    <Card className={cn("w-full", disabled && "opacity-50 pointer-events-none", className)}>
       <CardHeader>
         <CardTitle>Create Clip</CardTitle>
       </CardHeader>
@@ -50,10 +50,12 @@ export function ClipCreator({ className }: ClipCreatorProps) {
               step="0.1"
               min="0"
               className="flex-1"
+              disabled={disabled}
             />
             <Button
               onClick={setStartToCurrentTime}
               variant="outline"
+              disabled={disabled}
             >
               Set Start
             </Button>
@@ -85,10 +87,12 @@ export function ClipCreator({ className }: ClipCreatorProps) {
               step="0.1"
               min="0"
               className="flex-1"
+              disabled={disabled}
             />
             <Button
               onClick={setEndToCurrentTime}
               variant="outline"
+              disabled={disabled}
             >
               Set End
             </Button>
@@ -133,7 +137,7 @@ export function ClipCreator({ className }: ClipCreatorProps) {
         <div className="flex gap-2">
           <Button
             onClick={handleAddClip}
-            disabled={!canAddClip}
+            disabled={disabled || !canAddClip}
             className="flex-1"
           >
             Add Clip
@@ -141,6 +145,7 @@ export function ClipCreator({ className }: ClipCreatorProps) {
           <Button
             onClick={resetClip}
             variant="outline"
+            disabled={disabled}
           >
             Reset
           </Button>

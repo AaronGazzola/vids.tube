@@ -8,7 +8,7 @@ export const useClipCreator = () => {
   const [endTime, setEndTime] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
-  const { currentTime, duration, cropFrame, videoBounds, addClip } = useEditorStore();
+  const { currentTime, duration, cropFrame, videoBounds, addClip, clips } = useEditorStore();
 
   const setStartToCurrentTime = useCallback(() => {
     setStartTime(currentTime);
@@ -38,10 +38,15 @@ export const useClipCreator = () => {
       if (clipDuration > 180) {
         errors.push({ field: 'duration', message: 'Duration must be 3 minutes or less' });
       }
+
+      const existingClipsDuration = clips.reduce((sum, clip) => sum + clip.duration, 0);
+      if (existingClipsDuration + clipDuration > 180) {
+        errors.push({ field: 'duration', message: 'Total clips duration would exceed 3 minutes' });
+      }
     }
 
     return errors;
-  }, [startTime, endTime, duration]);
+  }, [startTime, endTime, duration, clips]);
 
   useEffect(() => {
     setValidationErrors(validateClip());
