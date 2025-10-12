@@ -7,13 +7,16 @@ import { VideoInput } from "@/components/editor/VideoInput";
 import { VideoPlayerWithControls } from "@/components/editor/VideoPlayerWithControls";
 import { useEditorStore } from "@/store/useEditorStore";
 import { useState } from "react";
-import { useKeyboardShortcuts, useProcessingToast } from "./page.hooks";
+import { useKeyboardShortcuts, useProcessingToast, useProcessingStatus } from "./page.hooks";
+import { useProcessingStore } from "./page.stores";
 
 export default function EditorPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const videoId = useEditorStore((state) => state.videoId);
+  const currentJob = useProcessingStore((state) => state.currentJob);
 
   useKeyboardShortcuts();
+  useProcessingStatus(currentJob?.id || null, !!currentJob?.id);
   const { isProcessing } = useProcessingToast();
 
   return (

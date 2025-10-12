@@ -1,4 +1,3 @@
-import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { conditionalLog } from "@/lib/log.util";
 import path from "path";
@@ -7,49 +6,7 @@ import { downloadYouTubeVideo } from "@/lib/video-download";
 import ffmpeg from "fluent-ffmpeg";
 import { promises as fs } from "fs";
 
-const LOG_LABEL = "api-process";
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id: projectId } = await params;
-
-    const startLog = conditionalLog({ action: "start_processing", projectId }, { label: LOG_LABEL });
-    if (startLog) console.log(startLog);
-
-    const project = await prisma.project.findUnique({
-      where: { id: projectId },
-    });
-
-    if (!project) {
-      return NextResponse.json({ error: "Project not found" }, { status: 404 });
-    }
-
-    const clips = JSON.parse(project.clips as string);
-
-    const job = await prisma.processingJob.create({
-      data: {
-        projectId,
-        status: "PENDING",
-        totalSteps: 4,
-        totalClips: clips.length,
-      },
-    });
-
-    processVideoInBackground(job.id, project);
-
-    return NextResponse.json(job);
-  } catch (error) {
-    const errorLog = conditionalLog({ action: "process_error", error }, { label: LOG_LABEL });
-    if (errorLog) console.log(errorLog);
-    return NextResponse.json(
-      { error: "Failed to start processing" },
-      { status: 500 }
-    );
-  }
-}
+const LOG_LABEL = "video-processing";
 
 async function updateJobProgress(
   jobId: string,
@@ -90,7 +47,7 @@ async function updateJobProgress(
   }
 }
 
-async function processVideoInBackground(
+export async function processVideoInBackground(
   jobId: string,
   project: { id: string; videoId: string; clips: unknown }
 ) {

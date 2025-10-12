@@ -8,17 +8,16 @@ const LOG_LABEL = "video-download";
 export interface DownloadOptions {
   videoId: string;
   outputPath: string;
-  startTime?: number;
-  endTime?: number;
+  sections?: Array<{ startTime: number; endTime: number }>;
 }
 
 export async function downloadYouTubeVideo(
   options: DownloadOptions
 ): Promise<string> {
-  const { videoId, outputPath, startTime, endTime } = options;
+  const { videoId, outputPath, sections } = options;
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-  conditionalLog({ action: "download_start", videoId, videoUrl, startTime, endTime }, { label: LOG_LABEL });
+  conditionalLog({ action: "download_start", videoId, videoUrl, sections }, { label: LOG_LABEL });
 
   try {
     await fs.mkdir(path.dirname(outputPath), { recursive: true });
@@ -29,10 +28,10 @@ export async function downloadYouTubeVideo(
       mergeOutputFormat: "mp4",
     };
 
-    if (startTime !== undefined && endTime !== undefined) {
-      const downloadSection = `*${startTime}-${endTime}`;
-      ytDlpOptions.downloadSections = downloadSection;
-      conditionalLog({ action: "using_time_range", downloadSection }, { label: LOG_LABEL });
+    if (sections && sections.length > 0) {
+      const downloadSections = sections.map(s => `*${s.startTime}-${s.endTime}`).join(",");
+      ytDlpOptions.downloadSections = downloadSections;
+      conditionalLog({ action: "using_time_ranges", downloadSections }, { label: LOG_LABEL });
     }
 
     conditionalLog({ action: "starting_ytdlp", options: ytDlpOptions }, { label: LOG_LABEL });
