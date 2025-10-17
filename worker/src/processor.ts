@@ -199,6 +199,9 @@ export async function processVideo(
       clips.length
     );
 
+    const finalOutputPath = path.join(os.tmpdir(), `output-${jobId}.mp4`);
+    await fs.copyFile(outputPath, finalOutputPath);
+
     await fs.rm(tempDir, { recursive: true, force: true });
 
     const outputUrl = `/api/projects/${data.projectId}/download?jobId=${jobId}`;

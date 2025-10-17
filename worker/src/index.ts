@@ -1,3 +1,7 @@
+import { config } from "dotenv";
+import { resolve } from "path";
+config({ path: resolve(process.cwd(), "../.env") });
+
 import express from "express";
 import { startWorker } from "./worker.js";
 
