@@ -144,6 +144,7 @@ export const useProcessingToast = () => {
             currentClip={currentJob.currentClip}
             totalClips={currentJob.totalClips}
             error={currentJob.error}
+            outputUrl={currentJob.outputUrl}
             onClose={() => {
               if (toastIdRef.current) {
                 toast.dismiss(toastIdRef.current);

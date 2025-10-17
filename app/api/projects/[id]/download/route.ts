@@ -4,7 +4,6 @@ import { conditionalLog } from "@/lib/log.util";
 import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
-import { cleanupProcessedVideo } from "@/lib/video-processing";
 
 const LOG_LABEL = "api-download";
 
@@ -46,8 +45,6 @@ export async function GET(
 
     const readLog = conditionalLog({ action: "file_read", jobId, size: fileBuffer.length }, { label: LOG_LABEL });
     if (readLog) console.log(readLog);
-
-    cleanupProcessedVideo(filePath).catch(() => {});
 
     return new NextResponse(fileBuffer as unknown as BodyInit, {
       headers: {

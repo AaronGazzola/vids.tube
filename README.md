@@ -14,6 +14,7 @@ Create YouTube Shorts from long-form YouTube videos.
 ### Prerequisites
 
 - Node.js 20+
+- Python 3
 - Redis
 - PostgreSQL (or use provided Neon DB)
 
@@ -28,7 +29,7 @@ brew services start redis
 2. Install dependencies:
 ```bash
 npm install
-cd worker && npm install && cd ..
+npm run install:worker
 ```
 
 3. Set up environment variables in `.env`:

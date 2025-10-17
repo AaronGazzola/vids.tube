@@ -7,7 +7,8 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "node scripts/setup-python.js"
+    "postinstall": "node scripts/setup-python.js",
+    "install:worker": "cd worker && PATH=\"../.local/bin:$PATH\" npm install && cd .."
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
