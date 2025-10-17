@@ -48,25 +48,60 @@ async function updateJobProgress(
 async function downloadVideoSections(
   videoId: string,
   outputPath: string,
-  sections: Array<{ startTime: number; endTime: number }>
+  sections: Array<{ startTime: number; endTime: number }>,
+  tempDir: string
 ): Promise<string> {
   const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
-  const ytDlpOptions: Record<string, unknown> = {
-    output: outputPath,
-    format: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-    mergeOutputFormat: "mp4",
-  };
+  const sectionPaths: string[] = [];
 
-  if (sections.length > 0) {
-    const downloadSections = sections.map(s => `*${s.startTime}-${s.endTime}`).join(",");
-    ytDlpOptions.downloadSections = downloadSections;
-    console.log(JSON.stringify({ action: "using_time_ranges", downloadSections }));
+  for (let i = 0; i < sections.length; i++) {
+    const section = sections[i];
+    const sectionPath = path.join(tempDir, `section-${i}.mp4`);
+    const downloadSection = `*${section.startTime}-${section.endTime}`;
+
+    console.log(JSON.stringify({
+      action: "downloading_section",
+      sectionIndex: i,
+      downloadSection
+    }));
+
+    const ytDlpOptions: Record<string, unknown> = {
+      output: sectionPath,
+      format: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
+      mergeOutputFormat: "mp4",
+      downloadSections: downloadSection,
+    };
+
+    await ytDlpWrap(videoUrl, ytDlpOptions);
+    sectionPaths.push(sectionPath);
   }
 
-  await ytDlpWrap(videoUrl, ytDlpOptions);
+  if (sectionPaths.length === 1) {
+    await fs.copyFile(sectionPaths[0], outputPath);
+  } else {
+    const listFilePath = path.join(tempDir, "sections-concat-list.txt");
+    const listContent = sectionPaths.map((p) => `file '${p}'`).join("\n");
+    await fs.writeFile(listFilePath, listContent);
+
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg()
+        .input(listFilePath)
+        .inputOptions(["-f concat", "-safe 0"])
+        .outputOptions(["-c copy"])
+        .output(outputPath)
+        .on("end", () => resolve())
+        .on("error", (error: Error) => reject(error))
+        .run();
+    });
+
+    for (const sectionPath of sectionPaths) {
+      await fs.unlink(sectionPath);
+    }
+    await fs.unlink(listFilePath);
+  }
 
   return outputPath;
 }
@@ -112,7 +147,7 @@ export async function processVideo(
       endTime: c.endTime
     }));
 
-    await downloadVideoSections(videoId, downloadedVideoPath, sections);
+    await downloadVideoSections(videoId, downloadedVideoPath, sections, tempDir);
 
     await updateJobProgress(
       jobId,
