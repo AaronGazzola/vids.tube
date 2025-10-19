@@ -64,11 +64,11 @@ Navigate to the Next.js service → **Settings** tab:
 
 - **Service Name**: `web` (optional)
 - **Root Directory**: Empty or `/`
-- **Watch Paths**: `/,!worker/**`
+- **Watch Paths**: `/**,!worker/**`
 
 Watch paths use gitignore-style patterns. This configuration:
-- Watches root directory
-- Ignores worker directory
+- Watches root directory and all files recursively (`/**`)
+- Ignores worker directory (`!worker/**`)
 - Prevents rebuilds when only worker code changes
 
 #### Variables Tab
@@ -101,9 +101,9 @@ Navigate to worker service → **Settings** tab:
 
 - **Service Name**: `worker` (optional)
 - **Root Directory**: `worker`
-- **Watch Paths**: `/worker/**`
+- **Watch Paths**: `worker/**`
 
-The root directory tells Railway to only use files from the worker folder. Watch paths ensure rebuilds only when worker code changes.
+The root directory tells Railway to only use files from the worker folder. Watch paths ensure rebuilds only when worker code changes. Note: No leading `/` in watch path as Railway evaluates from repository root.
 
 #### Variables Tab
 
@@ -193,8 +193,8 @@ startCommand = "npm start"
 
 ### Watch Paths
 
-- **Next.js**: `/,!worker/**` (watch root, ignore worker)
-- **Worker**: `/worker/**` (watch worker only)
+- **Next.js**: `/**,!worker/**` (watch root recursively, ignore worker)
+- **Worker**: `worker/**` (watch worker only)
 
 ## Railway Best Practices
 
@@ -250,16 +250,16 @@ After pushing changes, verify these critical settings in the Railway dashboard:
 Navigate to Next.js service → **Settings** tab and verify:
 
 1. **Root Directory**: Should be empty or `/`
-2. **Watch Paths**: Should be `/,!worker/**`
+2. **Watch Paths**: Should be `/**,!worker/**`
 
-If Watch Paths is empty or incorrect, the service won't redeploy when you push to main. Update it to `/,!worker/**` to watch the root directory while ignoring worker changes.
+If Watch Paths is empty or incorrect, the service won't redeploy when you push to main. Update it to `/**,!worker/**` to watch the root directory recursively while ignoring worker changes.
 
 ### Worker Service Settings
 
 Navigate to Worker service → **Settings** tab and verify:
 
 1. **Root Directory**: Should be `worker`
-2. **Watch Paths**: Should be `/worker/**`
+2. **Watch Paths**: Should be `worker/**`
 
 If these are incorrect, the worker may fail to build or redeploy unnecessarily.
 
@@ -281,7 +281,7 @@ If these are incorrect, the worker may fail to build or redeploy unnecessarily.
 - No build logs appear for Next.js service
 
 **Solutions:**
-1. Verify Watch Paths in Railway dashboard: `/,!worker/**`
+1. Verify Watch Paths in Railway dashboard: `/**,!worker/**` (must include `/**` to match files recursively)
 2. Ensure Root Directory is `/` or empty
 3. Check that [railway.toml](railway.toml) exists at project root
 4. Trigger manual redeploy: Service → Deploy → Deploy latest commit
@@ -337,8 +337,8 @@ Remove `railway.json` entirely and use the `RAILWAY_DOCKERFILE_PATH` environment
    - Next.js: `/` or empty
    - Worker: `worker`
 2. Check Watch Paths:
-   - Next.js: `/,!worker/**`
-   - Worker: `/worker/**`
+   - Next.js: `/**,!worker/**`
+   - Worker: `worker/**`
 3. **Known Issue:** Railway has a bug where watch paths may be ignored or disappear after builds. If this persists:
    - Monitor Railway Help Station for updates
    - Use manual deployments temporarily
