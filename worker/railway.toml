@@ -1,11 +1,14 @@
 [build]
 builder = "nixpacks"
 
-[build.nixpacksPlan]
-phases = ["setup", "install", "build"]
-
 [build.nixpacksPlan.phases.setup]
 nixPkgs = ["nodejs_22", "python3", "ffmpeg"]
+
+[build.nixpacksPlan.phases.install]
+cmds = ["mkdir -p /app/.local/bin && ln -sf $(which python3) /app/.local/bin/python && PATH=/app/.local/bin:$PATH npm ci"]
+
+[build.nixpacksPlan.phases.build]
+cmds = ["npx prisma generate", "npm run build"]
 
 [deploy]
 startCommand = "npm start"
