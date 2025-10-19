@@ -2,7 +2,7 @@ import { Worker, Job } from "bullmq";
 import { processVideo } from "./processor.js";
 import type { VideoProcessingJobData, VideoProcessingJobResult } from "./types.js";
 
-const redisConnection = {
+const redisConnection = process.env.REDIS_URL || {
   host: process.env.REDIS_HOST || "localhost",
   port: parseInt(process.env.REDIS_PORT || "6379"),
   password: process.env.REDIS_PASSWORD,
