@@ -1,18 +1,18 @@
 "use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useProcessingStore } from "./page.stores";
-import {
-  createProjectAction,
-  processVideoAction,
-  getProcessingJobAction,
-} from "./page.actions";
-import { CreateProjectData, ProcessVideoData } from "./page.types";
-import { toast } from "sonner";
+import { ProcessingToast } from "@/components/editor/ProcessingToast";
 import { Toast } from "@/components/ui/Toast";
 import { conditionalLog, LOG_LABELS } from "@/lib/log.util";
-import { ProcessingToast } from "@/components/editor/ProcessingToast";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import {
+  createProjectAction,
+  getProcessingJobAction,
+  processVideoAction,
+} from "./page.actions";
+import { useProcessingStore } from "./page.stores";
+import { CreateProjectData, ProcessVideoData } from "./page.types";
 
 export function useKeyboardShortcuts() {
   return null;
@@ -46,20 +46,26 @@ export const useProcessVideo = () => {
 
   return useMutation({
     mutationFn: async (data: ProcessVideoData) => {
-      const logOutput = conditionalLog({
-        action: "starting_video_processing",
-        projectId: data.projectId
-      }, { label: LOG_LABELS.VIDEO });
+      const logOutput = conditionalLog(
+        {
+          action: "starting_video_processing",
+          projectId: data.projectId,
+        },
+        { label: LOG_LABELS.VIDEO }
+      );
       if (logOutput) {
         console.log(logOutput);
       }
       const { data: job, error } = await processVideoAction(data);
       if (error) throw new Error(error);
-      const successLog = conditionalLog({
-        action: "processing_job_created",
-        jobId: job?.id,
-        status: job?.status
-      }, { label: LOG_LABELS.VIDEO });
+      const successLog = conditionalLog(
+        {
+          action: "processing_job_created",
+          jobId: job?.id,
+          status: job?.status,
+        },
+        { label: LOG_LABELS.VIDEO }
+      );
       if (successLog) {
         console.log(successLog);
       }
@@ -95,14 +101,17 @@ export const useProcessingStatus = (jobId: string | null, enabled = true) => {
       if (!jobId) return null;
       const { data: job, error } = await getProcessingJobAction(jobId);
       if (error) throw new Error(error);
-      const logOutput = conditionalLog({
-        action: "job_status_fetched",
-        jobId,
-        status: job?.status,
-        currentStep: job?.currentStep,
-        progress: job?.progress,
-        currentClip: job?.currentClip
-      }, { label: LOG_LABELS.VIDEO });
+      const logOutput = conditionalLog(
+        {
+          action: "job_status_fetched",
+          jobId,
+          status: job?.status,
+          currentStep: job?.currentStep,
+          progress: job?.progress,
+          currentClip: job?.currentClip,
+        },
+        { label: LOG_LABELS.VIDEO }
+      );
       if (logOutput) {
         console.log(logOutput);
       }
@@ -155,7 +164,10 @@ export const useProcessingToast = () => {
           />
         ),
         {
-          duration: currentJob.status === "COMPLETED" || currentJob.status === "FAILED" ? 5000 : Infinity,
+          duration:
+            currentJob.status === "COMPLETED" || currentJob.status === "FAILED"
+              ? 5000
+              : Infinity,
         }
       );
     } else if (toastIdRef.current) {
@@ -170,5 +182,8 @@ export const useProcessingToast = () => {
     };
   }, [currentJob, setCurrentJob]);
 
-  return { isProcessing: currentJob?.status === "PENDING" || currentJob?.status === "PROCESSING" };
+  return {
+    isProcessing:
+      currentJob?.status === "PENDING" || currentJob?.status === "PROCESSING",
+  };
 };

@@ -1,0 +1,17 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacksPlan]
+phases = ["setup", "install", "build"]
+
+[build.nixpacksPlan.phases.setup]
+nixPkgs = ["nodejs_22"]
+
+[build.nixpacksPlan.phases.install]
+cmds = ["npm ci"]
+
+[build.nixpacksPlan.phases.build]
+cmds = ["npx prisma generate", "npm run build"]
+
+[deploy]
+startCommand = "npm start"

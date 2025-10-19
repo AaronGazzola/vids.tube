@@ -2,7 +2,9 @@
 nixPkgs = ["nodejs_22", "python3", "ffmpeg"]
 
 [phases.install]
-cmds = ["npm ci"]
+cmds = [
+  "mkdir -p /app/.local/bin && ln -sf $(which python3) /app/.local/bin/python && PATH=/app/.local/bin:$PATH npm ci"
+]
 
 [phases.build]
 cmds = ["npx prisma generate", "npm run build"]

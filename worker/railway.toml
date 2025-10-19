@@ -1,0 +1,11 @@
+[build]
+builder = "nixpacks"
+
+[build.nixpacksPlan]
+phases = ["setup", "install", "build"]
+
+[build.nixpacksPlan.phases.setup]
+nixPkgs = ["nodejs_22", "python3", "ffmpeg"]
+
+[deploy]
+startCommand = "npm start"
