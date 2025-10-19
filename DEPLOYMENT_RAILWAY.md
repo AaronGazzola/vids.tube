@@ -182,7 +182,7 @@ startCommand = "npm start"
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "worker/Dockerfile"
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
     "startCommand": "npm start",
@@ -191,6 +191,8 @@ startCommand = "npm start"
   }
 }
 ```
+
+**Important:** The `dockerfilePath` is relative to the Root Directory setting. Since the worker service has Root Directory set to `worker`, the path `"Dockerfile"` refers to `worker/Dockerfile` in the repository.
 
 ### Watch Paths
 
@@ -294,11 +296,17 @@ If these are incorrect, the worker may fail to build or redeploy unnecessarily.
 - Error: "Dockerfile `Dockerfile` does not exist"
 - Worker service fails to build
 
+**Root Cause:**
+When Root Directory is set in Railway dashboard, the `dockerfilePath` in `railway.json` is relative to that Root Directory, NOT the repository root.
+
 **Solutions:**
-1. Verify [worker/railway.json](worker/railway.json) specifies `"dockerfilePath": "worker/Dockerfile"`
-2. Ensure [worker/Dockerfile](worker/Dockerfile) exists
-3. Check Root Directory is set to `worker` in Railway dashboard
-4. Railway looks for Dockerfile paths relative to repository root, not service root
+1. If Root Directory is `worker`: Set `"dockerfilePath": "Dockerfile"` in [worker/railway.json](worker/railway.json)
+2. If Root Directory is empty/`/`: Set `"dockerfilePath": "worker/Dockerfile"` OR use environment variable `RAILWAY_DOCKERFILE_PATH=/worker/Dockerfile`
+3. Ensure [worker/Dockerfile](worker/Dockerfile) exists
+4. Verify Root Directory setting matches your dockerfilePath configuration
+
+**Alternative Approach:**
+Remove `railway.json` entirely and use the `RAILWAY_DOCKERFILE_PATH` environment variable instead. Set it to the full path from repository root (e.g., `/worker/Dockerfile`).
 
 ### Worker Not Processing Jobs
 
@@ -318,10 +326,14 @@ If these are incorrect, the worker may fail to build or redeploy unnecessarily.
 **Worker:**
 1. Ensure [worker/Dockerfile](worker/Dockerfile) includes Python, FFmpeg, yt-dlp
 2. Verify all files are copied in Dockerfile
-3. Check [worker/railway.json](worker/railway.json) specifies `"dockerfilePath": "worker/Dockerfile"`
+3. Check [worker/railway.json](worker/railway.json) has correct `dockerfilePath` relative to Root Directory
 4. Alternative: Switch to Nixpacks by deleting railway.json (will use railway.toml instead)
 
 ### Both Services Deploying Every Push
+
+**Symptoms:**
+- Every git push triggers deployment for both services
+- Services deploy even when their code hasn't changed
 
 **Solutions:**
 1. Verify Root Directory:
@@ -330,6 +342,10 @@ If these are incorrect, the worker may fail to build or redeploy unnecessarily.
 2. Check Watch Paths:
    - Next.js: `/,!worker/**`
    - Worker: `/worker/**`
+3. **Known Issue:** Railway has a bug where watch paths may be ignored or disappear after builds. If this persists:
+   - Monitor Railway Help Station for updates
+   - Use manual deployments temporarily
+   - Consider using deployment webhooks as workaround
 
 ### Database Connection Issues
 
@@ -351,7 +367,9 @@ If these are incorrect, the worker may fail to build or redeploy unnecessarily.
 
 **Solutions:**
 1. Verify [worker/railway.json](worker/railway.json) exists and specifies `"builder": "DOCKERFILE"`
-2. Check `"dockerfilePath": "worker/Dockerfile"` is set correctly
+2. Check `dockerfilePath` is correct relative to Root Directory:
+   - If Root Directory = `worker`: Use `"dockerfilePath": "Dockerfile"`
+   - If Root Directory = `/` or empty: Use `"dockerfilePath": "worker/Dockerfile"`
 3. Ensure Dockerfile name is exactly `Dockerfile` (capital D)
 4. Dockerfile must be in worker directory: [worker/Dockerfile](worker/Dockerfile)
 5. Delete railway.json to switch to Nixpacks instead
