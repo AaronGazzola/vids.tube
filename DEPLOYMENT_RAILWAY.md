@@ -182,7 +182,7 @@ startCommand = "npm start"
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
+    "dockerfilePath": "worker/Dockerfile"
   },
   "deploy": {
     "startCommand": "npm start",
@@ -242,7 +242,63 @@ CLI features:
 - Link to specific services
 - View logs and deployment status
 
+## Verify Railway Dashboard Configuration
+
+After pushing changes, verify these critical settings in the Railway dashboard:
+
+### Next.js Service Settings
+
+Navigate to Next.js service → **Settings** tab and verify:
+
+1. **Root Directory**: Should be empty or `/`
+2. **Watch Paths**: Should be `/,!worker/**`
+
+If Watch Paths is empty or incorrect, the service won't redeploy when you push to main. Update it to `/,!worker/**` to watch the root directory while ignoring worker changes.
+
+### Worker Service Settings
+
+Navigate to Worker service → **Settings** tab and verify:
+
+1. **Root Directory**: Should be `worker`
+2. **Watch Paths**: Should be `/worker/**`
+
+If these are incorrect, the worker may fail to build or redeploy unnecessarily.
+
+### How to Update Settings
+
+1. Click on the service in Railway dashboard
+2. Go to **Settings** tab
+3. Scroll to **Service** section
+4. Update **Root Directory** and **Watch Paths** fields
+5. Click outside the field to auto-save
+6. Trigger a manual redeploy if needed
+
 ## Troubleshooting
+
+### Next.js Service Not Redeploying
+
+**Symptoms:**
+- Push to main branch doesn't trigger deployment
+- No build logs appear for Next.js service
+
+**Solutions:**
+1. Verify Watch Paths in Railway dashboard: `/,!worker/**`
+2. Ensure Root Directory is `/` or empty
+3. Check that [railway.toml](railway.toml) exists at project root
+4. Trigger manual redeploy: Service → Deploy → Deploy latest commit
+5. Check Railway activity feed for deployment triggers
+
+### Worker Dockerfile Error
+
+**Symptoms:**
+- Error: "Dockerfile `Dockerfile` does not exist"
+- Worker service fails to build
+
+**Solutions:**
+1. Verify [worker/railway.json](worker/railway.json) specifies `"dockerfilePath": "worker/Dockerfile"`
+2. Ensure [worker/Dockerfile](worker/Dockerfile) exists
+3. Check Root Directory is set to `worker` in Railway dashboard
+4. Railway looks for Dockerfile paths relative to repository root, not service root
 
 ### Worker Not Processing Jobs
 
@@ -262,7 +318,7 @@ CLI features:
 **Worker:**
 1. Ensure [worker/Dockerfile](worker/Dockerfile) includes Python, FFmpeg, yt-dlp
 2. Verify all files are copied in Dockerfile
-3. Check [worker/railway.json](worker/railway.json) specifies correct Dockerfile path
+3. Check [worker/railway.json](worker/railway.json) specifies `"dockerfilePath": "worker/Dockerfile"`
 4. Alternative: Switch to Nixpacks by deleting railway.json (will use railway.toml instead)
 
 ### Both Services Deploying Every Push
@@ -295,9 +351,10 @@ CLI features:
 
 **Solutions:**
 1. Verify [worker/railway.json](worker/railway.json) exists and specifies `"builder": "DOCKERFILE"`
-2. Ensure Dockerfile name is exactly `Dockerfile` (capital D)
-3. Dockerfile must be in worker directory: [worker/Dockerfile](worker/Dockerfile)
-4. Delete railway.json to switch to Nixpacks instead
+2. Check `"dockerfilePath": "worker/Dockerfile"` is set correctly
+3. Ensure Dockerfile name is exactly `Dockerfile` (capital D)
+4. Dockerfile must be in worker directory: [worker/Dockerfile](worker/Dockerfile)
+5. Delete railway.json to switch to Nixpacks instead
 
 ### TypeScript Build Errors for Worker Code
 
