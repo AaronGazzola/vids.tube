@@ -21,18 +21,21 @@ Create YouTube Shorts from long-form YouTube videos.
 ### Installation
 
 1. Install and start Redis:
+
 ```bash
 brew install redis
 brew services start redis
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 npm run install:worker
 ```
 
 3. Set up environment variables in `.env`:
+
 ```env
 DATABASE_URL="postgresql://..."
 REDIS_HOST="localhost"
@@ -61,6 +64,7 @@ The application uses a distributed architecture with two services:
 2. **Worker Service** (port 3001) - Background processor that handles video processing
 
 When a user requests video processing:
+
 - The Next.js app adds a job to the Redis queue (BullMQ)
 - The worker service picks up the job from the queue
 - Worker downloads video sections using yt-dlp
@@ -87,16 +91,19 @@ See [DEPLOYMENT_RAILWAY.md](DEPLOYMENT_RAILWAY.md) for the complete Railway depl
 **Quick Summary:**
 
 This application deploys to Railway as three services:
+
 1. **Next.js App** (root directory)
 2. **Worker Service** (worker directory)
 3. **Redis** (Railway database)
 
 **Key Configuration:**
+
 - **Next.js**: Root Directory `/`, Watch Paths `/,!worker/**`
 - **Worker**: Root Directory `worker`, Watch Paths `/worker/**`
 - **Environment Variables**: Use `${{Redis.REDISHOST}}` syntax for internal networking
 
 The deployment guide covers:
+
 - Step-by-step setup instructions
 - Service configuration (Settings & Variables tabs)
 - Environment variable reference syntax
@@ -104,3 +111,4 @@ The deployment guide covers:
 - Troubleshooting common issues
 - Cost optimization tips
 - Scaling strategies
+<!-- deploy -->
