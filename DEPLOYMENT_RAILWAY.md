@@ -160,9 +160,6 @@ Railway prioritizes config files in this order: railway.json > railway.toml > ni
 [build]
 builder = "nixpacks"
 
-[build.nixpacksPlan]
-phases = ["setup", "install", "build"]
-
 [build.nixpacksPlan.phases.setup]
 nixPkgs = ["nodejs_22"]
 
