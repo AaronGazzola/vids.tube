@@ -378,13 +378,39 @@ Remove `railway.json` entirely and use the `RAILWAY_DOCKERFILE_PATH` environment
 
 **Problem:** Next.js build fails with "Cannot find module 'express'" when scanning worker directory
 
-**Solution:**
-Ensure [tsconfig.json](tsconfig.json) excludes the worker directory:
-```json
-{
-  "exclude": ["node_modules", "worker"]
-}
-```
+**Root Cause:** Railway's Railpack builder may type-check the entire project including the worker directory, even when tsconfig.json excludes it. Worker dependencies (express, @types/express, etc.) are only in `worker/node_modules`, not root `node_modules`.
+
+**Solutions (in order of preference):**
+
+1. **Create .railignore file** (Recommended):
+   ```
+   worker/
+   ```
+   This tells Railway to completely ignore the worker directory when building the Next.js service.
+
+2. **Update tsconfig.json** to exclude worker:
+   ```json
+   {
+     "exclude": ["node_modules", "worker"]
+   }
+   ```
+
+3. **Update next.config.ts** to explicitly exclude worker from TypeScript checking:
+   ```typescript
+   {
+     typescript: {
+       ignoreBuildErrors: true,
+       exclude: ['worker/**']
+     }
+   }
+   ```
+
+4. **Force Railway to use railway.toml** instead of Railpack auto-detection:
+   - In Railway dashboard, go to Project Settings
+   - Add variable: `RAILWAY_USE_RAILPACK=false`
+   - This forces Railway to use your `railway.toml` configuration
+
+**Best Practice:** Use .railignore in the Next.js service root directory to completely exclude worker from the build context.
 
 ## Cost Optimization
 
