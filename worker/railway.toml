@@ -5,10 +5,12 @@ builder = "nixpacks"
 nixPkgs = ["nodejs_22", "python3", "ffmpeg"]
 
 [build.nixpacksPlan.phases.install]
-cmds = ["mkdir -p /app/.local/bin && ln -sf $(which python3) /app/.local/bin/python && PATH=/app/.local/bin:$PATH npm ci"]
+cmds = ["npm ci"]
 
 [build.nixpacksPlan.phases.build]
 cmds = ["npx prisma generate", "npm run build"]
 
 [deploy]
 startCommand = "npm start"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
