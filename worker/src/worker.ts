@@ -8,6 +8,13 @@ const redisConnection = {
   password: process.env.REDIS_PASSWORD,
 };
 
+console.log(JSON.stringify({
+  action: "redis_connection_config",
+  host: redisConnection.host,
+  port: redisConnection.port,
+  hasPassword: !!redisConnection.password
+}));
+
 export function startWorker() {
   const worker = new Worker<VideoProcessingJobData, VideoProcessingJobResult>(
     "video-processing",
