@@ -1,11 +1,13 @@
 import { Queue } from "bullmq";
 import { VideoProcessingJobData, VideoProcessingJobResult } from "./queue.types";
 
-const redisConnection = process.env.REDIS_URL || {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  password: process.env.REDIS_PASSWORD,
-};
+const redisConnection = process.env.REDIS_URL
+  ? { url: process.env.REDIS_URL }
+  : {
+      host: process.env.REDIS_HOST || "localhost",
+      port: parseInt(process.env.REDIS_PORT || "6379"),
+      password: process.env.REDIS_PASSWORD,
+    };
 
 export const videoProcessingQueue = new Queue<VideoProcessingJobData, VideoProcessingJobResult>(
   "video-processing",
