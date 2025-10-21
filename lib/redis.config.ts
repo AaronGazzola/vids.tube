@@ -10,6 +10,11 @@ function getRedisUrl(): string | undefined {
     return `redis://${auth}${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`;
   }
 
+  if (process.env.REDISHOST && process.env.REDISPORT) {
+    const auth = process.env.REDISPASSWORD ? `:${process.env.REDISPASSWORD}@` : '';
+    return `redis://${auth}${process.env.REDISHOST}:${process.env.REDISPORT}`;
+  }
+
   return undefined;
 }
 
@@ -51,9 +56,9 @@ export function getRedisConnection(): RedisOptions {
   }
 
   const config: RedisOptions = {
-    host: process.env.REDIS_HOST || "localhost",
-    port: parseInt(process.env.REDIS_PORT || "6379"),
-    password: process.env.REDIS_PASSWORD || undefined,
+    host: process.env.REDIS_HOST || process.env.REDISHOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || process.env.REDISPORT || "6379"),
+    password: process.env.REDIS_PASSWORD || process.env.REDISPASSWORD || undefined,
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
     retryStrategy: (times: number) => {
