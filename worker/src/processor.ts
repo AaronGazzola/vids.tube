@@ -4,9 +4,29 @@ import os from "os";
 import ytDlpWrap from "yt-dlp-exec";
 import ffmpeg from "fluent-ffmpeg";
 import { promises as fs } from "fs";
+import { execSync } from "child_process";
 import type { VideoProcessingJobData, VideoProcessingJobResult } from "./types.js";
 
 const prisma = new PrismaClient();
+
+try {
+  const ffmpegPath = execSync("which ffmpeg", { encoding: "utf-8" }).trim();
+  const ffprobePath = execSync("which ffprobe", { encoding: "utf-8" }).trim();
+
+  if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
+  if (ffprobePath) ffmpeg.setFfprobePath(ffprobePath);
+
+  console.log(JSON.stringify({
+    action: "ffmpeg_configured",
+    ffmpegPath,
+    ffprobePath
+  }));
+} catch (error) {
+  console.log(JSON.stringify({
+    action: "ffmpeg_path_detection_failed",
+    error: error instanceof Error ? error.message : String(error)
+  }));
+}
 
 async function updateJobProgress(
   jobId: string,
