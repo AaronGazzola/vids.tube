@@ -95,13 +95,45 @@ async function downloadVideoSections(
     await fs.writeFile(listFilePath, listContent);
 
     await new Promise<void>((resolve, reject) => {
+      let progressTimeout: NodeJS.Timeout;
+
+      const resetProgressTimeout = () => {
+        if (progressTimeout) clearTimeout(progressTimeout);
+        progressTimeout = setTimeout(() => {
+          console.log(JSON.stringify({
+            action: "ffmpeg_concat_timeout",
+            message: "FFmpeg concat taking longer than expected"
+          }));
+          reject(new Error("FFmpeg concat timeout"));
+        }, 60000);
+      };
+
+      resetProgressTimeout();
+
       ffmpeg()
         .input(listFilePath)
         .inputOptions(["-f concat", "-safe 0"])
-        .outputOptions(["-c copy"])
+        .outputOptions(["-c copy", "-max_muxing_queue_size 9999"])
         .output(outputPath)
-        .on("end", () => resolve())
-        .on("error", (error: Error) => reject(error))
+        .on("progress", (progress) => {
+          resetProgressTimeout();
+          console.log(JSON.stringify({
+            action: "ffmpeg_concat_progress",
+            percent: progress.percent || 0
+          }));
+        })
+        .on("end", () => {
+          clearTimeout(progressTimeout);
+          resolve();
+        })
+        .on("error", (error: Error) => {
+          clearTimeout(progressTimeout);
+          console.log(JSON.stringify({
+            action: "ffmpeg_concat_error",
+            error: error.message
+          }));
+          reject(error);
+        })
         .run();
     });
 
@@ -182,6 +214,22 @@ export async function processVideo(
 
       await new Promise<void>((resolve, reject) => {
         const duration = clip.endTime - clip.startTime;
+        let progressTimeout: NodeJS.Timeout;
+
+        const resetProgressTimeout = () => {
+          if (progressTimeout) clearTimeout(progressTimeout);
+          progressTimeout = setTimeout(() => {
+            console.log(JSON.stringify({
+              action: "ffmpeg_timeout",
+              clipIndex: i,
+              message: "FFmpeg processing taking longer than expected"
+            }));
+            reject(new Error("FFmpeg timeout - process killed"));
+          }, 120000);
+        };
+
+        resetProgressTimeout();
+
         ffmpeg(downloadedVideoPath)
           .setStartTime(clip.startTime)
           .setDuration(duration)
@@ -196,9 +244,34 @@ export async function processVideo(
               },
             },
           ])
+          .outputOptions([
+            "-preset ultrafast",
+            "-crf 23",
+            "-max_muxing_queue_size 9999",
+            "-threads 2"
+          ])
           .output(clipOutputPath)
-          .on("end", () => resolve())
-          .on("error", (error: Error) => reject(error))
+          .on("progress", (progress) => {
+            resetProgressTimeout();
+            console.log(JSON.stringify({
+              action: "ffmpeg_progress",
+              clipIndex: i,
+              percent: progress.percent || 0
+            }));
+          })
+          .on("end", () => {
+            clearTimeout(progressTimeout);
+            resolve();
+          })
+          .on("error", (error: Error) => {
+            clearTimeout(progressTimeout);
+            console.log(JSON.stringify({
+              action: "ffmpeg_error",
+              clipIndex: i,
+              error: error.message
+            }));
+            reject(error);
+          })
           .run();
       });
 
@@ -222,13 +295,45 @@ export async function processVideo(
       await fs.writeFile(listFilePath, listContent);
 
       await new Promise<void>((resolve, reject) => {
+        let progressTimeout: NodeJS.Timeout;
+
+        const resetProgressTimeout = () => {
+          if (progressTimeout) clearTimeout(progressTimeout);
+          progressTimeout = setTimeout(() => {
+            console.log(JSON.stringify({
+              action: "ffmpeg_final_merge_timeout",
+              message: "FFmpeg final merge taking longer than expected"
+            }));
+            reject(new Error("FFmpeg final merge timeout"));
+          }, 60000);
+        };
+
+        resetProgressTimeout();
+
         ffmpeg()
           .input(listFilePath)
           .inputOptions(["-f concat", "-safe 0"])
-          .outputOptions(["-c copy"])
+          .outputOptions(["-c copy", "-max_muxing_queue_size 9999"])
           .output(outputPath)
-          .on("end", () => resolve())
-          .on("error", (error: Error) => reject(error))
+          .on("progress", (progress) => {
+            resetProgressTimeout();
+            console.log(JSON.stringify({
+              action: "ffmpeg_final_merge_progress",
+              percent: progress.percent || 0
+            }));
+          })
+          .on("end", () => {
+            clearTimeout(progressTimeout);
+            resolve();
+          })
+          .on("error", (error: Error) => {
+            clearTimeout(progressTimeout);
+            console.log(JSON.stringify({
+              action: "ffmpeg_final_merge_error",
+              error: error.message
+            }));
+            reject(error);
+          })
           .run();
       });
     }

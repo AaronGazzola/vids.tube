@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     py3-pip \
     ffmpeg \
     bash \
-    curl
+    curl \
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community
 
 # Install yt-dlp (use --break-system-packages for Alpine's externally managed environment)
 RUN pip3 install --no-cache-dir --break-system-packages yt-dlp

@@ -92,6 +92,15 @@ If deploying Next.js to Vercel instead of Railway:
 
 ## Quick Troubleshooting
 
+### FFmpeg Error 234 (Request interrupted)
+- This error occurs when ffmpeg is killed due to resource limits
+- The worker has been optimized with:
+  - Progress monitoring to prevent timeout kills
+  - Memory-efficient encoding settings (`-preset ultrafast`, `-threads 2`)
+  - Increased muxing queue size
+  - Proper timeout handling (2-minute timeout per clip)
+- If issue persists, increase Railway service resource limits
+
 ### YouTube Bot Detection
 - Regenerate cookies: `node scripts/generate-youtube-cookies.mjs`
 - Update `YT_COOKIES_CONTENT` in Railway Worker variables
