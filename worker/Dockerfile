@@ -3,12 +3,13 @@ FROM node:22-alpine
 
 # Install Python, FFmpeg, and other dependencies
 RUN apk add --no-cache \
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/main \
+    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community \
     python3 \
     py3-pip \
     ffmpeg \
     bash \
-    curl \
-    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community
+    curl
 
 # Install yt-dlp (use --break-system-packages for Alpine's externally managed environment)
 RUN pip3 install --no-cache-dir --break-system-packages yt-dlp
