@@ -1,19 +1,7 @@
 import { Worker, Job } from "bullmq";
 import { processVideo } from "./processor.js";
+import { getRedisConnection } from "./redis.config.js";
 import type { VideoProcessingJobData, VideoProcessingJobResult } from "./types.js";
-
-const redisConnection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  password: process.env.REDIS_PASSWORD,
-};
-
-console.log(JSON.stringify({
-  action: "redis_connection_config",
-  host: redisConnection.host,
-  port: redisConnection.port,
-  hasPassword: !!redisConnection.password
-}));
 
 export function startWorker() {
   const worker = new Worker<VideoProcessingJobData, VideoProcessingJobResult>(
@@ -43,7 +31,7 @@ export function startWorker() {
       }
     },
     {
-      connection: redisConnection,
+      connection: getRedisConnection(),
       concurrency: 2,
       limiter: {
         max: 5,

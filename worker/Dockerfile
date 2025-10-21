@@ -1,0 +1,54 @@
+# Use Node.js 22 alpine for smaller image size
+FROM node:22-alpine
+
+# Install Python, FFmpeg, and other dependencies
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    ffmpeg \
+    bash \
+    curl
+
+# Install yt-dlp
+RUN pip3 install --no-cache-dir yt-dlp
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev for build)
+RUN npm ci
+
+# Copy prisma schema (Railway will copy from repo root)
+COPY prisma ./prisma
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Copy TypeScript config and source
+COPY tsconfig.json ./
+COPY src ./src
+
+# Build TypeScript
+RUN npm run build
+
+# Clean up dev dependencies
+RUN npm prune --production
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Change ownership of app directory
+RUN chown -R nodejs:nodejs /app
+
+# Switch to non-root user
+USER nodejs
+
+# Expose port
+EXPOSE 3001
+
+# Start the worker
+CMD ["npm", "start"]
