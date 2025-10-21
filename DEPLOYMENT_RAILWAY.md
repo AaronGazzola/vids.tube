@@ -38,6 +38,7 @@ DATABASE_URL=your_postgresql_connection_string
 REDIS_HOST=${{Redis.REDISHOST}}
 REDIS_PORT=${{Redis.REDISPORT}}
 REDIS_PASSWORD=${{Redis.REDISPASSWORD}}
+WORKER_URL=${{worker.RAILWAY_PUBLIC_DOMAIN}}
 NEXT_PUBLIC_LOG_LABELS=all
 ```
 
@@ -87,6 +88,7 @@ If deploying Next.js to Vercel instead of Railway:
    REDIS_HOST=<tcp-proxy-host>  # e.g., mainline.proxy.rlwy.net
    REDIS_PORT=<tcp-proxy-port>  # e.g., 59608
    REDIS_PASSWORD=<redis-password>
+   WORKER_URL=<railway-worker-public-url>  # e.g., https://worker-production-xxxx.up.railway.app
    NEXT_PUBLIC_LOG_LABELS=all
    ```
 
@@ -125,6 +127,7 @@ If deploying Next.js to Vercel instead of Railway:
 | `REDIS_HOST` | Both | Yes |
 | `REDIS_PORT` | Both | Yes |
 | `REDIS_PASSWORD` | Both | Yes |
+| `WORKER_URL` | Next.js | Yes |
 | `YT_COOKIES_CONTENT` | Worker | Yes |
 | `YT_COOKIES_PATH` | Worker | Yes |
 | `PORT` | Worker | Yes |
@@ -135,5 +138,8 @@ If deploying Next.js to Vercel instead of Railway:
 
 - Worker always stays on Railway (needs Docker for ffmpeg/yt-dlp)
 - Frontend can be on Railway or Vercel
+- Worker must have a public URL to serve video files to Next.js
+- Video files are processed on Railway worker and served via HTTP endpoint
+- Files auto-cleanup 60 seconds after download
 - Cookies expire periodically - regenerate when needed
 - Use Railway's reference syntax for internal services: `${{Redis.VARIABLE}}`
