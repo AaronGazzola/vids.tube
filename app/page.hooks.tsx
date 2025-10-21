@@ -1,11 +1,11 @@
 "use client";
 
 import { ProcessingToast } from "@/components/editor/ProcessingToast";
-import { Toast } from "@/components/ui/Toast";
+import { toast } from "@/components/ui/CustomToast";
 import { conditionalLog, LOG_LABELS } from "@/lib/log.util";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { toast as sonnerToast } from "sonner";
 import {
   createProjectAction,
   getProcessingJobAction,
@@ -30,13 +30,10 @@ export const useCreateProject = () => {
       if (logOutput) {
         console.log(logOutput);
       }
-      toast.custom(() => (
-        <Toast
-          variant="error"
-          title="Failed to create project"
-          message={error.message || "An unexpected error occurred"}
-        />
-      ));
+      toast.error(
+        "Failed to create project",
+        error.message || "An unexpected error occurred"
+      );
     },
   });
 };
@@ -81,13 +78,10 @@ export const useProcessVideo = () => {
       if (logOutput) {
         console.log(logOutput);
       }
-      toast.custom(() => (
-        <Toast
-          variant="error"
-          title="Failed to process video"
-          message={error.message || "An unexpected error occurred"}
-        />
-      ));
+      toast.error(
+        "Failed to process video",
+        error.message || "An unexpected error occurred"
+      );
     },
   });
 };
@@ -140,10 +134,10 @@ export const useProcessingToast = () => {
   useEffect(() => {
     if (currentJob) {
       if (toastIdRef.current) {
-        toast.dismiss(toastIdRef.current);
+        sonnerToast.dismiss(toastIdRef.current);
       }
 
-      toastIdRef.current = toast.custom(
+      toastIdRef.current = sonnerToast.custom(
         () => (
           <ProcessingToast
             status={currentJob.status}
@@ -156,7 +150,7 @@ export const useProcessingToast = () => {
             outputUrl={currentJob.outputUrl}
             onClose={() => {
               if (toastIdRef.current) {
-                toast.dismiss(toastIdRef.current);
+                sonnerToast.dismiss(toastIdRef.current);
                 toastIdRef.current = null;
               }
               setCurrentJob(null);
@@ -171,13 +165,13 @@ export const useProcessingToast = () => {
         }
       );
     } else if (toastIdRef.current) {
-      toast.dismiss(toastIdRef.current);
+      sonnerToast.dismiss(toastIdRef.current);
       toastIdRef.current = null;
     }
 
     return () => {
       if (toastIdRef.current) {
-        toast.dismiss(toastIdRef.current);
+        sonnerToast.dismiss(toastIdRef.current);
       }
     };
   }, [currentJob, setCurrentJob]);
