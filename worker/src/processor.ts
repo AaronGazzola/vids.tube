@@ -93,6 +93,7 @@ async function downloadVideoSections(
       format: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
       mergeOutputFormat: "mp4",
       downloadSections: downloadSection,
+      forceKeyframesAtCuts: true,
     };
 
     if (process.env.YT_COOKIES_PATH) {
