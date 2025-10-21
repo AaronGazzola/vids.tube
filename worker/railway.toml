@@ -5,7 +5,7 @@ builder = "nixpacks"
 nixPkgs = ["nodejs_22", "python3", "ffmpeg"]
 
 [build.nixpacksPlan.phases.install]
-cmds = ["npm ci"]
+cmds = ["npm ci", "pip3 install --no-cache-dir yt-dlp"]
 
 [build.nixpacksPlan.phases.build]
 cmds = ["npx prisma generate", "npm run build"]

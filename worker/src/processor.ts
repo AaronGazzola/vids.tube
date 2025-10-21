@@ -83,8 +83,19 @@ async function downloadVideoSections(
       ytDlpOptions.userAgent = process.env.YT_USER_AGENT;
     }
 
-    await ytDlpWrap(videoUrl, ytDlpOptions);
-    sectionPaths.push(sectionPath);
+    try {
+      await ytDlpWrap(videoUrl, ytDlpOptions);
+      sectionPaths.push(sectionPath);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes("drm protected") || errorMessage.includes("DRM")) {
+        throw new Error("This video is DRM protected and cannot be downloaded. Please ensure you are logged in to YouTube and have valid cookies.");
+      }
+      if (errorMessage.includes("Requested format is not available")) {
+        throw new Error("Video format not available. The video may be private, age-restricted, or region-locked.");
+      }
+      throw error;
+    }
   }
 
   if (sectionPaths.length === 1) {
