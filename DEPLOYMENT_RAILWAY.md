@@ -1,542 +1,130 @@
 # Railway Deployment Guide
 
-This document provides the official step-by-step guide for deploying vids.tube to Railway. All information is based on Railway's official documentation.
-
 ## Prerequisites
 
 - Railway account ([railway.app](https://railway.app))
 - GitHub repository connected to Railway
-- PostgreSQL database (Railway-hosted or external)
+- PostgreSQL database
+- YouTube cookies for video processing
 
-## Architecture Overview
-
-The deployment consists of three Railway services in a single project:
-
-1. **Next.js App** - Main web application (root directory) - Can be deployed to Vercel
-2. **Worker Service** - Video processing worker (worker directory) - Stays on Railway
-3. **Redis** - Queue management (Railway database template) - Stays on Railway
-
-## Deployment Options
-
-### Option A: Next.js on Vercel, Worker + Redis on Railway (Recommended)
-- Deploy frontend to Vercel for better performance and global CDN
-- Keep Worker and Redis on Railway for video processing
-- Requires using Railway's TCP Proxy for Redis connection from Vercel
-
-### Option B: All services on Railway
-- Simpler setup, all services in one place
-- Can use internal networking between all services
-- No additional configuration needed
-
-## Step-by-Step Deployment
+## Quick Deploy
 
 ### 1. Create Railway Project
 
 1. Log in to [Railway](https://railway.app)
-2. Click **"New Project"**
-3. Select **"Deploy from GitHub repo"**
-4. Authorize Railway and select your repository
-5. Railway will automatically create the first service and detect the Next.js application
+2. Click **"New Project"** → **"Deploy from GitHub repo"**
+3. Select your repository
 
-### 2. Add Redis Database
+### 2. Add Redis
 
-Add Redis using one of these methods:
+- Press `Cmd/Ctrl + K` → Type "Redis" → Select **"Add Redis"**
 
-**Command Menu (Recommended):**
-- Press `Cmd + K` (Mac) or `Ctrl + K` (Windows/Linux)
-- Type "Redis" and select **"Add Redis"**
-
-**New Button:**
-- Click **"+ New"** → **"Database"** → **"Add Redis"**
-
-**Right-click:**
-- Right-click canvas → **"Database"** → **"Add Redis"**
-
-Railway automatically generates these environment variables:
-- `REDISHOST` (internal hostname: redis.railway.internal)
-- `REDISPORT` (internal port: 6379)
-- `REDISUSER`
-- `REDISPASSWORD`
-- `REDIS_URL`
-
-**Important:** Railway also provides a TCP Proxy endpoint for external access (needed for Vercel):
-- Find it in Redis service → **Connect** tab → **TCP Proxy** section
-- Host: `mainline.proxy.rlwy.net` (or similar)
-- Port: `59xxx` (different from internal port)
-
-### 3. Add PostgreSQL (Optional)
-
-If you don't have an external database, use the same method to add PostgreSQL. Railway will auto-generate `DATABASE_URL`.
-
-### 4. Add Worker Service
+### 3. Add Worker Service
 
 1. Click **"+ New"** → **"GitHub Repo"**
-2. Select the **same repository** (creates second service from same repo)
+2. Select the **same repository**
 
-### 5. Configure Next.js Service
+### 4. Configure Services
 
-#### Option A: If Deploying to Vercel
+#### Next.js Service
 
-In Vercel Dashboard → Settings → Environment Variables:
+**Settings:**
+- Root Directory: `/` or empty
+- Watch Paths: `/**,!worker/**`
 
+**Variables:**
 ```env
 DATABASE_URL=your_postgresql_connection_string
-REDIS_HOST=mainline.proxy.rlwy.net  # Get from Railway Redis → Connect → TCP Proxy
-REDIS_PORT=59608                     # TCP Proxy port (NOT 6379)
-REDIS_PASSWORD=your_redis_password   # From Railway Redis
-NEXT_PUBLIC_LOG_LABELS=all
-```
-
-**Important:** Must use TCP Proxy endpoint, NOT internal network (`redis.railway.internal` won't work from Vercel)
-
-#### Option B: If Keeping on Railway
-
-Navigate to the Next.js service → **Settings** tab:
-
-- **Service Name**: `web` (optional)
-- **Root Directory**: Empty or `/`
-- **Watch Paths**: `/**,!worker/**`
-
-Go to **Variables** tab and add:
-
-```env
-DATABASE_URL=your_postgresql_connection_string
-REDIS_HOST=${{Redis.REDISHOST}}  # Internal network (redis.railway.internal)
-REDIS_PORT=${{Redis.REDISPORT}}  # Internal port (6379)
+REDIS_HOST=${{Redis.REDISHOST}}
+REDIS_PORT=${{Redis.REDISPORT}}
 REDIS_PASSWORD=${{Redis.REDISPASSWORD}}
 NEXT_PUBLIC_LOG_LABELS=all
 ```
 
-### 6. Configure Worker Service (Always on Railway)
+#### Worker Service
 
-#### Settings Tab
+**Settings:**
+- Root Directory: `worker`
+- Watch Paths: `worker/**`
 
-Navigate to worker service → **Settings** tab:
-
-- **Service Name**: `worker` (optional)
-- **Root Directory**: `worker`
-- **Watch Paths**: `worker/**`
-
-#### Variables Tab
-
-Add the following variables:
-
+**Variables:**
 ```env
 DATABASE_URL=your_postgresql_connection_string
-REDIS_HOST=${{Redis.REDISHOST}}  # Always use internal network for worker
-REDIS_PORT=${{Redis.REDISPORT}}  # Internal port (6379)
+REDIS_HOST=${{Redis.REDISHOST}}
+REDIS_PORT=${{Redis.REDISPORT}}
 REDIS_PASSWORD=${{Redis.REDISPASSWORD}}
 PORT=3001
-YT_COOKIES_PATH=/app/cookies/cookies.txt  # YouTube authentication cookies
-YT_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36  # Optional: custom user agent
+YT_COOKIES_CONTENT=<paste contents of cookies.txt>
+YT_COOKIES_PATH=/app/cookies/cookies.txt
+YT_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 ```
 
-**Note:** Worker always uses internal networking since it stays on Railway
+### 5. Setup YouTube Cookies
 
-#### Build Configuration
-
-Railway will automatically:
-1. Detect [worker/railway.json](worker/railway.json)
-2. Use Dockerfile builder as specified in railway.json
-3. Build Docker image from [worker/Dockerfile](worker/Dockerfile) with Python, FFmpeg, and yt-dlp
-
-The worker includes three config files:
-- **railway.json** (ACTIVE) - Uses Dockerfile builder
-- **railway.toml** (INACTIVE) - Alternative Nixpacks config (ignored when railway.json exists)
-- **nixpacks.toml** (INACTIVE) - Nixpacks build plan (ignored when railway.json exists)
-
-Railway prioritizes config files in this order: railway.json > railway.toml > nixpacks.toml
-
-### 7. Verify Deployment
-
-1. Check all three services show **"Active"** status
-2. Click Next.js service for public URL
-3. Check deployment logs:
-   - Next.js: "Ready started server on 0.0.0.0:3000"
-   - Worker: "worker_started" log message
-   - Redis: Active status
-
-## Configuration Reference
-
-### Environment Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/db` |
-| `REDIS_HOST` | Redis hostname | `${{Redis.REDISHOST}}` |
-| `REDIS_PORT` | Redis port | `${{Redis.REDISPORT}}` |
-| `REDIS_PASSWORD` | Redis password | `${{Redis.REDISPASSWORD}}` |
-| `NEXT_PUBLIC_LOG_LABELS` | Logging config (Next.js) | `all` |
-| `PORT` | Worker port | `3001` |
-| `YT_COOKIES_PATH` | Path to YouTube cookies file (Worker) | `/app/cookies/cookies.txt` |
-| `YT_USER_AGENT` | Custom user agent for yt-dlp (Worker, optional) | Browser user agent string |
-
-### Config Files
-
-**Next.js Service** - [railway.toml](railway.toml):
-```toml
-[build]
-builder = "nixpacks"
-
-[build.nixpacksPlan.phases.setup]
-nixPkgs = ["nodejs_22"]
-
-[build.nixpacksPlan.phases.install]
-cmds = ["npm ci"]
-
-[build.nixpacksPlan.phases.build]
-cmds = ["npx prisma generate", "npm run build"]
-
-[deploy]
-startCommand = "npm start"
-```
-
-**Worker Service** - [worker/railway.json](worker/railway.json):
-```json
-{
-  "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
-  },
-  "deploy": {
-    "startCommand": "npm start",
-    "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
-  }
-}
-```
-
-**Important:** The `dockerfilePath` is relative to the Root Directory setting. Since the worker service has Root Directory set to `worker`, the path `"Dockerfile"` refers to `worker/Dockerfile` in the repository.
-
-### Watch Paths
-
-- **Next.js**: `/**,!worker/**` (watch root recursively, ignore worker)
-- **Worker**: `worker/**` (watch worker only)
-
-## Railway Best Practices
-
-### Use Correct Networking
-
-**For services on Railway (Worker):**
-```env
-# ✅ Internal networking (faster, no egress charges)
-REDIS_HOST=${{Redis.REDISHOST}}  # redis.railway.internal
-REDIS_PORT=${{Redis.REDISPORT}}  # 6379
-```
-
-**For services on Vercel (Frontend):**
-```env
-# ✅ TCP Proxy (required for external access)
-REDIS_HOST=mainline.proxy.rlwy.net  # Get from Railway
-REDIS_PORT=59608                     # TCP proxy port
-```
-
-**Never use:**
-```env
-# ❌ Won't work from Vercel
-REDIS_HOST=redis.railway.internal
-```
-
-### Config as Code Benefits
-
-1. **Version Control**: Configuration tracked with code
-2. **Priority**: Overrides dashboard settings
-3. **Consistency**: Configuration matches code
-
-**Important Notes:**
-- Config files override dashboard settings
-- Next.js service uses [railway.toml](railway.toml) at project root (Nixpacks with Node.js 22)
-- Worker service uses [worker/railway.json](worker/railway.json) (Dockerfile builder)
-- Railway looks for config files relative to the repository root, not the service root directory
-
-### Automatic Deployments
-
-When you push to your main branch:
-1. Railway detects changes
-2. Each service checks watch paths
-3. Only services with matching changes rebuild
-
-### Railway CLI
-
-```bash
-npm i -g @railway/cli
-railway login
-railway link
-railway run npm run dev
-```
-
-CLI features:
-- Run local code with production variables
-- Link to specific services
-- View logs and deployment status
-
-## Verify Railway Dashboard Configuration
-
-After pushing changes, verify these critical settings in the Railway dashboard:
-
-### Next.js Service Settings
-
-Navigate to Next.js service → **Settings** tab and verify:
-
-1. **Root Directory**: Should be empty or `/`
-2. **Watch Paths**: Should be `/**,!worker/**`
-
-If Watch Paths is empty or incorrect, the service won't redeploy when you push to main. Update it to `/**,!worker/**` to watch the root directory recursively while ignoring worker changes.
-
-### Worker Service Settings
-
-Navigate to Worker service → **Settings** tab and verify:
-
-1. **Root Directory**: Should be `worker`
-2. **Watch Paths**: Should be `worker/**`
-
-If these are incorrect, the worker may fail to build or redeploy unnecessarily.
-
-### How to Update Settings
-
-1. Click on the service in Railway dashboard
-2. Go to **Settings** tab
-3. Scroll to **Service** section
-4. Update **Root Directory** and **Watch Paths** fields
-5. Click outside the field to auto-save
-6. Trigger a manual redeploy if needed
-
-## Troubleshooting
-
-### YouTube Bot Detection Error
-
-**Error:** `Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies`
-
-**Cause:** YouTube blocks automated downloads from cloud/server environments
-
-**Solutions:**
-
-1. **Generate YouTube Cookies Locally:**
+1. Generate cookies locally:
    ```bash
    node scripts/generate-youtube-cookies.mjs
    ```
-   This script will:
-   - Attempt to extract cookies from your browser automatically
-   - Create a cookies.txt file in Netscape format
-   - Provide manual instructions if automatic extraction fails
 
-2. **Add Cookies to Worker Service:**
+2. Copy contents of `worker/cookies/cookies.txt`
 
-   **Option A: Using Railway Variables (Recommended for security)**
-   - Copy the contents of `worker/cookies/cookies.txt`
-   - In Railway dashboard, go to Worker service → Variables
-   - Add a new variable `YT_COOKIES_CONTENT` with the cookie file contents
-   - Update the worker to write this content to `/app/cookies/cookies.txt` on startup
+3. Add to Worker's `YT_COOKIES_CONTENT` environment variable
 
-   **Option B: Include in Docker Image (Simple but less secure)**
-   - The Dockerfile already creates `/app/cookies/cookies.txt`
-   - Place your cookies in `worker/cookies/cookies.txt` before deploying
-   - The file will be included in the Docker image
+### 6. Deploy
 
-3. **Configure Environment Variables:**
+Push to main branch. Railway will automatically deploy both services.
+
+## Deploying Frontend to Vercel (Optional)
+
+If deploying Next.js to Vercel instead of Railway:
+
+1. Get Redis TCP Proxy from Railway:
+   - Redis service → **Connect** tab → **TCP Proxy**
+
+2. Add to Vercel environment variables:
    ```env
-   YT_COOKIES_PATH=/app/cookies/cookies.txt
-   YT_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+   DATABASE_URL=your_postgresql_connection_string
+   REDIS_HOST=<tcp-proxy-host>  # e.g., mainline.proxy.rlwy.net
+   REDIS_PORT=<tcp-proxy-port>  # e.g., 59608
+   REDIS_PASSWORD=<redis-password>
+   NEXT_PUBLIC_LOG_LABELS=all
    ```
 
-4. **Alternative: Use a Proxy Service**
-   - Consider using a residential proxy for yt-dlp requests
-   - Add proxy configuration to yt-dlp options in processor.ts
+## Quick Troubleshooting
 
-**Important Notes:**
-- YouTube cookies expire after some time and need to be refreshed
-- Using cookies from a logged-in account may violate YouTube's ToS
-- Consider implementing retry logic with different approaches
-- Monitor for rate limiting and implement appropriate delays
+### YouTube Bot Detection
+- Regenerate cookies: `node scripts/generate-youtube-cookies.mjs`
+- Update `YT_COOKIES_CONTENT` in Railway Worker variables
 
-### Redis Connection from Vercel
+### Service Not Deploying
+- Check Watch Paths are set correctly
+- Trigger manual deploy: Service → Deploy → Deploy latest commit
 
-**Error:** `getaddrinfo ENOTFOUND redis.railway.internal`
+### Worker Build Fails
+- Verify Root Directory is set to `worker`
+- Check `worker/Dockerfile` exists
 
-**Cause:** Vercel cannot access Railway's internal network
+### Redis Connection Error (from Vercel)
+- Use TCP Proxy endpoint, not internal network
+- Get correct host/port from Redis → Connect → TCP Proxy
 
-**Solution:** Use Railway's TCP Proxy endpoint:
-1. Go to Railway Redis service → **Connect** tab
-2. Find **TCP Proxy** section
-3. Update Vercel environment variables:
-   ```env
-   REDIS_HOST=mainline.proxy.rlwy.net  # Your TCP proxy host
-   REDIS_PORT=59608                     # Your TCP proxy port (NOT 6379)
-   REDIS_PASSWORD=your_password
-   ```
-4. Redeploy on Vercel
+## Environment Variables Reference
 
-### Next.js Service Not Redeploying
+| Variable | Service | Required |
+|----------|---------|----------|
+| `DATABASE_URL` | Both | Yes |
+| `REDIS_HOST` | Both | Yes |
+| `REDIS_PORT` | Both | Yes |
+| `REDIS_PASSWORD` | Both | Yes |
+| `YT_COOKIES_CONTENT` | Worker | Yes |
+| `YT_COOKIES_PATH` | Worker | Yes |
+| `PORT` | Worker | Yes |
+| `YT_USER_AGENT` | Worker | No |
+| `NEXT_PUBLIC_LOG_LABELS` | Next.js | No |
 
-**Symptoms:**
-- Push to main branch doesn't trigger deployment
-- No build logs appear for Next.js service
+## Notes
 
-**Solutions:**
-1. Verify Watch Paths in Railway dashboard: `/**,!worker/**` (must include `/**` to match files recursively)
-2. Ensure Root Directory is `/` or empty
-3. Check that [railway.toml](railway.toml) exists at project root
-4. Trigger manual redeploy: Service → Deploy → Deploy latest commit
-5. Check Railway activity feed for deployment triggers
-
-### Worker Dockerfile Error
-
-**Symptoms:**
-- Error: "Dockerfile `Dockerfile` does not exist"
-- Worker service fails to build
-
-**Root Cause:**
-When Root Directory is set in Railway dashboard, the `dockerfilePath` in `railway.json` is relative to that Root Directory, NOT the repository root.
-
-**Solutions:**
-1. If Root Directory is `worker`: Set `"dockerfilePath": "Dockerfile"` in [worker/railway.json](worker/railway.json)
-2. If Root Directory is empty/`/`: Set `"dockerfilePath": "worker/Dockerfile"` OR use environment variable `RAILWAY_DOCKERFILE_PATH=/worker/Dockerfile`
-3. Ensure [worker/Dockerfile](worker/Dockerfile) exists
-4. Verify Root Directory setting matches your dockerfilePath configuration
-
-**Alternative Approach:**
-Remove `railway.json` entirely and use the `RAILWAY_DOCKERFILE_PATH` environment variable instead. Set it to the full path from repository root (e.g., `/worker/Dockerfile`).
-
-### Worker Not Processing Jobs
-
-**Solutions:**
-1. Verify Redis variables use reference syntax: `${{Redis.REDISHOST}}`
-2. Check worker logs for connection errors
-3. Ensure both services reference same Redis instance
-4. Look for "worker_started" in logs
-
-### Build Failures
-
-**Next.js:**
-1. Verify `build` and `start` scripts in package.json
-2. Check all dependencies are listed
-3. Review build logs
-
-**Worker:**
-1. Ensure [worker/Dockerfile](worker/Dockerfile) includes Python, FFmpeg, yt-dlp
-2. Verify all files are copied in Dockerfile
-3. Check [worker/railway.json](worker/railway.json) has correct `dockerfilePath` relative to Root Directory
-4. Alternative: Switch to Nixpacks by deleting railway.json (will use railway.toml instead)
-
-### Both Services Deploying Every Push
-
-**Symptoms:**
-- Every git push triggers deployment for both services
-- Services deploy even when their code hasn't changed
-
-**Solutions:**
-1. Verify Root Directory:
-   - Next.js: `/` or empty
-   - Worker: `worker`
-2. Check Watch Paths:
-   - Next.js: `/**,!worker/**`
-   - Worker: `worker/**`
-3. **Known Issue:** Railway has a bug where watch paths may be ignored or disappear after builds. If this persists:
-   - Monitor Railway Help Station for updates
-   - Use manual deployments temporarily
-   - Consider using deployment webhooks as workaround
-
-### Database Connection Issues
-
-**Solutions:**
-1. Check `DATABASE_URL` format
-2. External DB: Ensure Railway IPs are allowed
-3. Railway DB: Use reference `${{Postgres.DATABASE_URL}}`
-4. Verify Prisma generates client during build
-
-### Environment Variables Not Working
-
-**Solutions:**
-1. Check reference syntax: `${{ServiceName.VARIABLE}}`
-2. Next.js public vars must start with `NEXT_PUBLIC_`
-3. Redeploy after changing variables
-4. Service name is case-sensitive
-
-### Dockerfile Not Being Used
-
-**Solutions:**
-1. Verify [worker/railway.json](worker/railway.json) exists and specifies `"builder": "DOCKERFILE"`
-2. Check `dockerfilePath` is correct relative to Root Directory:
-   - If Root Directory = `worker`: Use `"dockerfilePath": "Dockerfile"`
-   - If Root Directory = `/` or empty: Use `"dockerfilePath": "worker/Dockerfile"`
-3. Ensure Dockerfile name is exactly `Dockerfile` (capital D)
-4. Dockerfile must be in worker directory: [worker/Dockerfile](worker/Dockerfile)
-5. Delete railway.json to switch to Nixpacks instead
-
-### TypeScript Build Errors for Worker Code
-
-**Problem:** Next.js build fails with "Cannot find module 'express'" when scanning worker directory
-
-**Root Cause:** Railway's Railpack builder may type-check the entire project including the worker directory, even when tsconfig.json excludes it. Worker dependencies (express, @types/express, etc.) are only in `worker/node_modules`, not root `node_modules`.
-
-**Solutions (in order of preference):**
-
-1. **Create .railignore file** (Recommended):
-   ```
-   worker/
-   ```
-   This tells Railway to completely ignore the worker directory when building the Next.js service.
-
-2. **Update tsconfig.json** to exclude worker:
-   ```json
-   {
-     "exclude": ["node_modules", "worker"]
-   }
-   ```
-
-3. **Update next.config.ts** to explicitly exclude worker from TypeScript checking:
-   ```typescript
-   {
-     typescript: {
-       ignoreBuildErrors: true,
-       exclude: ['worker/**']
-     }
-   }
-   ```
-
-4. **Force Railway to use railway.toml** instead of Railpack auto-detection:
-   - In Railway dashboard, go to Project Settings
-   - Add variable: `RAILWAY_USE_RAILPACK=false`
-   - This forces Railway to use your `railway.toml` configuration
-
-**Best Practice:** Use .railignore in the Next.js service root directory to completely exclude worker from the build context.
-
-## Cost Optimization
-
-Railway pricing:
-- **Hobby Plan**: $5/month + usage
-- **Pro Plan**: $20/month + usage
-- Usage: CPU time, memory, network egress
-
-**Optimization Tips:**
-
-1. **Watch Paths**: Prevent unnecessary builds
-2. **Internal Networking**: Avoid egress charges (use `${{}}` syntax)
-3. **Monitor Dashboard**: Track per-service costs
-4. **Optimize Docker**: Multi-stage builds, smaller images
-5. **Restart Policies**: Prevent infinite loops (already configured)
-
-## Scaling
-
-### Web Service
-- Horizontal scaling on Pro plan
-- Automatic load balancing
-
-### Worker Service
-
-**Vertical Scaling:**
-- Increase memory in settings
-- Adjust worker concurrency in code
-
-**Horizontal Scaling (Pro plan):**
-- Increase replicas in settings
-- BullMQ distributes jobs across workers
-- Each replica processes from shared queue
-
-**Monitor:**
-- Watch Redis queue size
-- Add replicas if queue grows
-- Reduce if queue empty
-
-Configuration: Adjust concurrency in [worker/src/worker.ts](worker/src/worker.ts)
+- Worker always stays on Railway (needs Docker for ffmpeg/yt-dlp)
+- Frontend can be on Railway or Vercel
+- Cookies expire periodically - regenerate when needed
+- Use Railway's reference syntax for internal services: `${{Redis.VARIABLE}}`
