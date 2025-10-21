@@ -41,6 +41,9 @@ RUN npm prune --production
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
 
+# Create cookies directory and file
+RUN mkdir -p /app/cookies && touch /app/cookies/cookies.txt
+
 # Change ownership of app directory
 RUN chown -R nodejs:nodejs /app
 

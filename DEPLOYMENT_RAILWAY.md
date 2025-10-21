@@ -12,9 +12,21 @@ This document provides the official step-by-step guide for deploying vids.tube t
 
 The deployment consists of three Railway services in a single project:
 
-1. **Next.js App** - Main web application (root directory)
-2. **Worker Service** - Video processing worker (worker directory)
-3. **Redis** - Queue management (Railway database template)
+1. **Next.js App** - Main web application (root directory) - Can be deployed to Vercel
+2. **Worker Service** - Video processing worker (worker directory) - Stays on Railway
+3. **Redis** - Queue management (Railway database template) - Stays on Railway
+
+## Deployment Options
+
+### Option A: Next.js on Vercel, Worker + Redis on Railway (Recommended)
+- Deploy frontend to Vercel for better performance and global CDN
+- Keep Worker and Redis on Railway for video processing
+- Requires using Railway's TCP Proxy for Redis connection from Vercel
+
+### Option B: All services on Railway
+- Simpler setup, all services in one place
+- Can use internal networking between all services
+- No additional configuration needed
 
 ## Step-by-Step Deployment
 
@@ -41,11 +53,16 @@ Add Redis using one of these methods:
 - Right-click canvas → **"Database"** → **"Add Redis"**
 
 Railway automatically generates these environment variables:
-- `REDISHOST`
-- `REDISPORT`
+- `REDISHOST` (internal hostname: redis.railway.internal)
+- `REDISPORT` (internal port: 6379)
 - `REDISUSER`
 - `REDISPASSWORD`
 - `REDIS_URL`
+
+**Important:** Railway also provides a TCP Proxy endpoint for external access (needed for Vercel):
+- Find it in Redis service → **Connect** tab → **TCP Proxy** section
+- Host: `mainline.proxy.rlwy.net` (or similar)
+- Port: `59xxx` (different from internal port)
 
 ### 3. Add PostgreSQL (Optional)
 
@@ -58,7 +75,21 @@ If you don't have an external database, use the same method to add PostgreSQL. R
 
 ### 5. Configure Next.js Service
 
-#### Settings Tab
+#### Option A: If Deploying to Vercel
+
+In Vercel Dashboard → Settings → Environment Variables:
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+REDIS_HOST=mainline.proxy.rlwy.net  # Get from Railway Redis → Connect → TCP Proxy
+REDIS_PORT=59608                     # TCP Proxy port (NOT 6379)
+REDIS_PASSWORD=your_redis_password   # From Railway Redis
+NEXT_PUBLIC_LOG_LABELS=all
+```
+
+**Important:** Must use TCP Proxy endpoint, NOT internal network (`redis.railway.internal` won't work from Vercel)
+
+#### Option B: If Keeping on Railway
 
 Navigate to the Next.js service → **Settings** tab:
 
@@ -66,34 +97,17 @@ Navigate to the Next.js service → **Settings** tab:
 - **Root Directory**: Empty or `/`
 - **Watch Paths**: `/**,!worker/**`
 
-Watch paths use gitignore-style patterns. This configuration:
-- Watches root directory and all files recursively (`/**`)
-- Ignores worker directory (`!worker/**`)
-- Prevents rebuilds when only worker code changes
-
-#### Variables Tab
-
 Go to **Variables** tab and add:
 
 ```env
 DATABASE_URL=your_postgresql_connection_string
-REDIS_HOST=${{Redis.REDISHOST}}
-REDIS_PORT=${{Redis.REDISPORT}}
+REDIS_HOST=${{Redis.REDISHOST}}  # Internal network (redis.railway.internal)
+REDIS_PORT=${{Redis.REDISPORT}}  # Internal port (6379)
 REDIS_PASSWORD=${{Redis.REDISPASSWORD}}
 NEXT_PUBLIC_LOG_LABELS=all
 ```
 
-**Variable Reference Syntax:**
-- `${{ServiceName.VARIABLE}}` - References variables from other services
-- `${{shared.VARIABLE}}` - References shared project variables
-- Uses Railway's internal networking (faster, more secure, no egress charges)
-
-If using Railway PostgreSQL:
-```env
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-```
-
-### 6. Configure Worker Service
+### 6. Configure Worker Service (Always on Railway)
 
 #### Settings Tab
 
@@ -103,19 +117,21 @@ Navigate to worker service → **Settings** tab:
 - **Root Directory**: `worker`
 - **Watch Paths**: `worker/**`
 
-The root directory tells Railway to only use files from the worker folder. Watch paths ensure rebuilds only when worker code changes. Note: No leading `/` in watch path as Railway evaluates from repository root.
-
 #### Variables Tab
 
 Add the following variables:
 
 ```env
 DATABASE_URL=your_postgresql_connection_string
-REDIS_HOST=${{Redis.REDISHOST}}
-REDIS_PORT=${{Redis.REDISPORT}}
+REDIS_HOST=${{Redis.REDISHOST}}  # Always use internal network for worker
+REDIS_PORT=${{Redis.REDISPORT}}  # Internal port (6379)
 REDIS_PASSWORD=${{Redis.REDISPASSWORD}}
 PORT=3001
+YT_COOKIES_PATH=/app/cookies/cookies.txt  # YouTube authentication cookies
+YT_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36  # Optional: custom user agent
 ```
+
+**Note:** Worker always uses internal networking since it stays on Railway
 
 #### Build Configuration
 
@@ -152,6 +168,8 @@ Railway prioritizes config files in this order: railway.json > railway.toml > ni
 | `REDIS_PASSWORD` | Redis password | `${{Redis.REDISPASSWORD}}` |
 | `NEXT_PUBLIC_LOG_LABELS` | Logging config (Next.js) | `all` |
 | `PORT` | Worker port | `3001` |
+| `YT_COOKIES_PATH` | Path to YouTube cookies file (Worker) | `/app/cookies/cookies.txt` |
+| `YT_USER_AGENT` | Custom user agent for yt-dlp (Worker, optional) | Browser user agent string |
 
 ### Config Files
 
@@ -198,14 +216,26 @@ startCommand = "npm start"
 
 ## Railway Best Practices
 
-### Use Internal Networking
+### Use Correct Networking
 
+**For services on Railway (Worker):**
 ```env
-# ✅ Correct - Internal networking
-REDIS_HOST=${{Redis.REDISHOST}}
+# ✅ Internal networking (faster, no egress charges)
+REDIS_HOST=${{Redis.REDISHOST}}  # redis.railway.internal
+REDIS_PORT=${{Redis.REDISPORT}}  # 6379
+```
 
-# ❌ Incorrect - Public internet (slower, costs more)
-REDIS_HOST=redis-production-abcd.railway.app
+**For services on Vercel (Frontend):**
+```env
+# ✅ TCP Proxy (required for external access)
+REDIS_HOST=mainline.proxy.rlwy.net  # Get from Railway
+REDIS_PORT=59608                     # TCP proxy port
+```
+
+**Never use:**
+```env
+# ❌ Won't work from Vercel
+REDIS_HOST=redis.railway.internal
 ```
 
 ### Config as Code Benefits
@@ -273,6 +303,69 @@ If these are incorrect, the worker may fail to build or redeploy unnecessarily.
 6. Trigger a manual redeploy if needed
 
 ## Troubleshooting
+
+### YouTube Bot Detection Error
+
+**Error:** `Sign in to confirm you're not a bot. Use --cookies-from-browser or --cookies`
+
+**Cause:** YouTube blocks automated downloads from cloud/server environments
+
+**Solutions:**
+
+1. **Generate YouTube Cookies Locally:**
+   ```bash
+   node scripts/generate-youtube-cookies.mjs
+   ```
+   This script will:
+   - Attempt to extract cookies from your browser automatically
+   - Create a cookies.txt file in Netscape format
+   - Provide manual instructions if automatic extraction fails
+
+2. **Add Cookies to Worker Service:**
+
+   **Option A: Using Railway Variables (Recommended for security)**
+   - Copy the contents of `worker/cookies/cookies.txt`
+   - In Railway dashboard, go to Worker service → Variables
+   - Add a new variable `YT_COOKIES_CONTENT` with the cookie file contents
+   - Update the worker to write this content to `/app/cookies/cookies.txt` on startup
+
+   **Option B: Include in Docker Image (Simple but less secure)**
+   - The Dockerfile already creates `/app/cookies/cookies.txt`
+   - Place your cookies in `worker/cookies/cookies.txt` before deploying
+   - The file will be included in the Docker image
+
+3. **Configure Environment Variables:**
+   ```env
+   YT_COOKIES_PATH=/app/cookies/cookies.txt
+   YT_USER_AGENT=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
+   ```
+
+4. **Alternative: Use a Proxy Service**
+   - Consider using a residential proxy for yt-dlp requests
+   - Add proxy configuration to yt-dlp options in processor.ts
+
+**Important Notes:**
+- YouTube cookies expire after some time and need to be refreshed
+- Using cookies from a logged-in account may violate YouTube's ToS
+- Consider implementing retry logic with different approaches
+- Monitor for rate limiting and implement appropriate delays
+
+### Redis Connection from Vercel
+
+**Error:** `getaddrinfo ENOTFOUND redis.railway.internal`
+
+**Cause:** Vercel cannot access Railway's internal network
+
+**Solution:** Use Railway's TCP Proxy endpoint:
+1. Go to Railway Redis service → **Connect** tab
+2. Find **TCP Proxy** section
+3. Update Vercel environment variables:
+   ```env
+   REDIS_HOST=mainline.proxy.rlwy.net  # Your TCP proxy host
+   REDIS_PORT=59608                     # Your TCP proxy port (NOT 6379)
+   REDIS_PASSWORD=your_password
+   ```
+4. Redeploy on Vercel
 
 ### Next.js Service Not Redeploying
 

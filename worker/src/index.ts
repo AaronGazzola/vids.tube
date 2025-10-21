@@ -4,9 +4,12 @@ config({ path: resolve(process.cwd(), "../.env") });
 
 import express from "express";
 import { startWorker } from "./worker.js";
+import { setupCookies } from "./startup.js";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+await setupCookies();
 
 app.use(express.json());
 

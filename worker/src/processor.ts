@@ -75,6 +75,14 @@ async function downloadVideoSections(
       downloadSections: downloadSection,
     };
 
+    if (process.env.YT_COOKIES_PATH) {
+      ytDlpOptions.cookies = process.env.YT_COOKIES_PATH;
+    }
+
+    if (process.env.YT_USER_AGENT) {
+      ytDlpOptions.userAgent = process.env.YT_USER_AGENT;
+    }
+
     await ytDlpWrap(videoUrl, ytDlpOptions);
     sectionPaths.push(sectionPath);
   }
