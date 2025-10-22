@@ -1,11 +1,11 @@
 import { PrismaClient } from "@prisma/client";
 import path from "path";
 import os from "os";
-import ytDlpWrap from "yt-dlp-exec";
 import ffmpeg from "fluent-ffmpeg";
 import { promises as fs } from "fs";
 import { execSync } from "child_process";
 import type { VideoProcessingJobData, VideoProcessingJobResult } from "./types.js";
+import { downloadWithRetry, addRateLimitDelay, verifyCookieFile, isBotDetectionError } from "./ytdlp.util.js";
 
 const prisma = new PrismaClient();
 
@@ -75,6 +75,16 @@ async function downloadVideoSections(
 
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
+  if (process.env.YT_COOKIES_PATH) {
+    const cookieValid = await verifyCookieFile(process.env.YT_COOKIES_PATH);
+    if (!cookieValid) {
+      console.log(JSON.stringify({
+        action: "cookie_warning",
+        message: "Cookie file may be invalid or missing YouTube cookies"
+      }));
+    }
+  }
+
   const sectionPaths: string[] = [];
 
   for (let i = 0; i < sections.length; i++) {
@@ -105,7 +115,7 @@ async function downloadVideoSections(
     }
 
     try {
-      await ytDlpWrap(videoUrl, ytDlpOptions);
+      await downloadWithRetry(videoUrl, ytDlpOptions, 3);
 
       const stats = await fs.stat(sectionPath);
       if (!stats.isFile() || stats.size === 0) {
@@ -119,7 +129,16 @@ async function downloadVideoSections(
       }));
 
       sectionPaths.push(sectionPath);
+
+      if (i < sections.length - 1) {
+        await addRateLimitDelay(5000, 10000);
+      }
+
     } catch (error: unknown) {
+      if (isBotDetectionError(error)) {
+        throw new Error("YouTube bot detection triggered. Please refresh cookies and try again. This typically happens when downloading from cloud servers. Consider using a residential proxy or reducing download frequency.");
+      }
+
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes("drm protected") || errorMessage.includes("DRM")) {
         throw new Error("This video is DRM protected and cannot be downloaded. Please ensure you are logged in to YouTube and have valid cookies.");

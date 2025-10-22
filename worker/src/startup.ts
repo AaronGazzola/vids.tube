@@ -9,11 +9,16 @@ export async function setupCookies(): Promise<void> {
     try {
       const cookiesDir = path.dirname(cookiesPath);
       await fs.mkdir(cookiesDir, { recursive: true });
-      await fs.writeFile(cookiesPath, cookiesContent);
+
+      const decodedContent = Buffer.from(cookiesContent, "base64").toString("utf-8");
+      await fs.writeFile(cookiesPath, decodedContent);
+
+      const stats = await fs.stat(cookiesPath);
       console.log(JSON.stringify({
         action: "cookies_setup",
         status: "success",
         path: cookiesPath,
+        size: stats.size,
         source: "environment_variable"
       }));
     } catch (error) {
