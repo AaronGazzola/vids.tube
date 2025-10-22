@@ -4,8 +4,9 @@ import os from "os";
 import ffmpeg from "fluent-ffmpeg";
 import { promises as fs } from "fs";
 import { execSync } from "child_process";
+import { Readable } from "stream";
+import { finished } from "stream/promises";
 import type { VideoProcessingJobData, VideoProcessingJobResult } from "./types.js";
-import { downloadWithRetry, addRateLimitDelay, verifyCookieFile, isBotDetectionError } from "./ytdlp.util.js";
 
 const prisma = new PrismaClient();
 
@@ -65,159 +66,31 @@ async function updateJobProgress(
   }
 }
 
-async function downloadVideoSections(
-  videoId: string,
-  outputPath: string,
-  sections: Array<{ startTime: number; endTime: number }>,
-  tempDir: string
-): Promise<string> {
-  const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+async function downloadVideoFromR2(storageUrl: string, outputPath: string): Promise<string> {
+  console.log(JSON.stringify({
+    action: "downloading_from_r2",
+    storageUrl
+  }));
 
-  await fs.mkdir(path.dirname(outputPath), { recursive: true });
+  const response = await fetch(storageUrl);
 
-  if (process.env.YT_COOKIES_PATH) {
-    const cookieValid = await verifyCookieFile(process.env.YT_COOKIES_PATH);
-    if (!cookieValid) {
-      console.log(JSON.stringify({
-        action: "cookie_warning",
-        message: "Cookie file may be invalid or missing YouTube cookies"
-      }));
-    }
+  if (!response.ok) {
+    throw new Error(`Failed to download video from R2: ${response.statusText}`);
   }
 
-  const sectionPaths: string[] = [];
+  const fileStream = fs.createWriteStream(outputPath);
 
-  for (let i = 0; i < sections.length; i++) {
-    const section = sections[i];
-    const sectionPath = path.join(tempDir, `section-${i}.mp4`);
-    const downloadSection = `*${section.startTime}-${section.endTime}`;
-
-    console.log(JSON.stringify({
-      action: "downloading_section",
-      sectionIndex: i,
-      downloadSection
-    }));
-
-    const ytDlpOptions: Record<string, unknown> = {
-      output: sectionPath,
-      format: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-      mergeOutputFormat: "mp4",
-      downloadSections: downloadSection,
-      forceKeyframesAtCuts: true,
-    };
-
-    if (process.env.YT_COOKIES_PATH) {
-      ytDlpOptions.cookies = process.env.YT_COOKIES_PATH;
-    }
-
-    if (process.env.YT_USER_AGENT) {
-      ytDlpOptions.userAgent = process.env.YT_USER_AGENT;
-    }
-
-    try {
-      await downloadWithRetry(videoUrl, ytDlpOptions, 3);
-
-      const stats = await fs.stat(sectionPath);
-      if (!stats.isFile() || stats.size === 0) {
-        throw new Error(`Downloaded section ${i} is invalid: size=${stats.size}`);
-      }
-
-      console.log(JSON.stringify({
-        action: "section_downloaded",
-        sectionIndex: i,
-        fileSize: stats.size
-      }));
-
-      sectionPaths.push(sectionPath);
-
-      if (i < sections.length - 1) {
-        await addRateLimitDelay(5000, 10000);
-      }
-
-    } catch (error: unknown) {
-      if (isBotDetectionError(error)) {
-        throw new Error("YouTube bot detection triggered. Please refresh cookies and try again. This typically happens when downloading from cloud servers. Consider using a residential proxy or reducing download frequency.");
-      }
-
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (errorMessage.includes("drm protected") || errorMessage.includes("DRM")) {
-        throw new Error("This video is DRM protected and cannot be downloaded. Please ensure you are logged in to YouTube and have valid cookies.");
-      }
-      if (errorMessage.includes("Requested format is not available")) {
-        throw new Error("Video format not available. The video may be private, age-restricted, or region-locked.");
-      }
-      throw error;
-    }
+  if (!response.body) {
+    throw new Error("No response body from R2");
   }
 
-  if (sectionPaths.length === 1) {
-    await fs.copyFile(sectionPaths[0], outputPath);
-  } else {
-    const listFilePath = path.join(tempDir, "sections-concat-list.txt");
-    const listContent = sectionPaths.map((p) => `file '${p}'`).join("\n");
-    await fs.writeFile(listFilePath, listContent);
+  await finished(Readable.fromWeb(response.body as any).pipe(fileStream));
 
-    await new Promise<void>((resolve, reject) => {
-      let progressTimeout: NodeJS.Timeout;
-      let stderrOutput = "";
-
-      const resetProgressTimeout = () => {
-        if (progressTimeout) clearTimeout(progressTimeout);
-        progressTimeout = setTimeout(() => {
-          console.log(JSON.stringify({
-            action: "ffmpeg_concat_timeout",
-            message: "FFmpeg concat taking longer than expected",
-            stderr: stderrOutput
-          }));
-          reject(new Error("FFmpeg concat timeout"));
-        }, 60000);
-      };
-
-      resetProgressTimeout();
-
-      const command = ffmpeg()
-        .input(listFilePath)
-        .inputOptions(["-f concat", "-safe 0"])
-        .outputOptions(["-c copy", "-max_muxing_queue_size 9999"])
-        .output(outputPath)
-        .on("start", (commandLine) => {
-          console.log(JSON.stringify({
-            action: "ffmpeg_concat_start",
-            command: commandLine
-          }));
-        })
-        .on("stderr", (stderrLine) => {
-          stderrOutput += stderrLine + "\n";
-        })
-        .on("progress", (progress) => {
-          resetProgressTimeout();
-          console.log(JSON.stringify({
-            action: "ffmpeg_concat_progress",
-            percent: progress.percent || 0
-          }));
-        })
-        .on("end", () => {
-          clearTimeout(progressTimeout);
-          resolve();
-        })
-        .on("error", (error: Error) => {
-          clearTimeout(progressTimeout);
-          console.log(JSON.stringify({
-            action: "ffmpeg_concat_error",
-            error: error.message,
-            stderr: stderrOutput
-          }));
-          reject(error);
-        });
-
-      command.run();
-    });
-
-    for (const sectionPath of sectionPaths) {
-      await fs.unlink(sectionPath);
-    }
-    await fs.unlink(listFilePath);
-  }
+  const stats = await fs.stat(outputPath);
+  console.log(JSON.stringify({
+    action: "r2_download_complete",
+    fileSize: stats.size
+  }));
 
   return outputPath;
 }
@@ -225,7 +98,7 @@ async function downloadVideoSections(
 export async function processVideo(
   data: VideoProcessingJobData
 ): Promise<VideoProcessingJobResult> {
-  const { jobId, videoId, clips } = data;
+  const { jobId, projectId, videoId, clips } = data;
 
   try {
     console.log(JSON.stringify({
@@ -244,13 +117,36 @@ export async function processVideo(
       },
     });
 
+    const project = await prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        videos: {
+          take: 1,
+        },
+      },
+    });
+
+    if (!project || !project.videos || project.videos.length === 0) {
+      throw new Error("Project or video not found");
+    }
+
+    const video = project.videos[0];
+
+    if (video.status !== "READY") {
+      throw new Error(`Video not ready for processing. Current status: ${video.status}`);
+    }
+
+    if (!video.storageUrl) {
+      throw new Error("Video storage URL not available");
+    }
+
     const tempDir = path.join(os.tmpdir(), `video-process-${Date.now()}`);
     await fs.mkdir(tempDir, { recursive: true });
     const outputPath = path.join(tempDir, `output-${jobId}.mp4`);
 
     await updateJobProgress(
       jobId,
-      "Downloading video sections...",
+      "Downloading video from storage...",
       1,
       4,
       0,
@@ -258,12 +154,7 @@ export async function processVideo(
     );
 
     const downloadedVideoPath = path.join(tempDir, "source.mp4");
-    const sections = clips.map(c => ({
-      startTime: c.startTime,
-      endTime: c.endTime
-    }));
-
-    await downloadVideoSections(videoId, downloadedVideoPath, sections, tempDir);
+    await downloadVideoFromR2(video.storageUrl, downloadedVideoPath);
 
     const downloadedStats = await fs.stat(downloadedVideoPath);
     if (!downloadedStats.isFile() || downloadedStats.size === 0) {
@@ -271,9 +162,14 @@ export async function processVideo(
     }
 
     console.log(JSON.stringify({
-      action: "video_downloaded",
+      action: "video_downloaded_from_r2",
       fileSize: downloadedStats.size
     }));
+
+    await prisma.video.update({
+      where: { id: video.id },
+      data: { lastUsedAt: new Date() },
+    });
 
     await updateJobProgress(
       jobId,

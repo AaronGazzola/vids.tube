@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { conditionalLog } from "@/lib/log.util";
+import { extractVideoId } from "@/lib/youtube";
+import { enqueueVideoDownloadJob } from "@/lib/queue.util";
 
 const LOG_LABEL = "api-projects";
 
@@ -16,7 +18,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    conditionalLog({ action: "create_project", videoId, clipCount: clips.length }, { label: LOG_LABEL });
+    const youtubeId = extractVideoId(videoUrl);
+    if (!youtubeId) {
+      return NextResponse.json(
+        { error: "Invalid YouTube URL" },
+        { status: 400 }
+      );
+    }
+
+    conditionalLog({ action: "create_project", videoId, youtubeId, clipCount: clips.length }, { label: LOG_LABEL });
+
+    let video = await prisma.video.findUnique({
+      where: { youtubeId },
+    });
+
+    if (!video) {
+      video = await prisma.video.create({
+        data: {
+          youtubeId,
+          sourceUrl: videoUrl,
+          status: "DOWNLOADING",
+        },
+      });
+
+      await enqueueVideoDownloadJob({
+        videoId: video.id,
+        youtubeId,
+        sourceUrl: videoUrl,
+      });
+
+      conditionalLog({ action: "video_download_queued", videoId: video.id, youtubeId }, { label: LOG_LABEL });
+    } else {
+      await prisma.video.update({
+        where: { id: video.id },
+        data: { lastUsedAt: new Date() },
+      });
+
+      conditionalLog({ action: "video_already_exists", videoId: video.id, status: video.status }, { label: LOG_LABEL });
+    }
 
     const project = await prisma.project.create({
       data: {
@@ -24,12 +63,22 @@ export async function POST(request: NextRequest) {
         videoId,
         videoUrl,
         clips: JSON.stringify(clips),
+        videos: {
+          connect: { id: video.id },
+        },
       },
     });
 
     conditionalLog({ action: "project_created", projectId: project.id }, { label: LOG_LABEL });
 
-    return NextResponse.json(project);
+    return NextResponse.json({
+      ...project,
+      video: {
+        id: video.id,
+        status: video.status,
+        storageUrl: video.storageUrl,
+      },
+    });
   } catch (error) {
     conditionalLog({ action: "create_project_error", error }, { label: LOG_LABEL });
     return NextResponse.json(

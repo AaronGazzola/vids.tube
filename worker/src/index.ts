@@ -4,6 +4,7 @@ config({ path: resolve(process.cwd(), "../.env") });
 
 import express from "express";
 import { startWorker } from "./worker.js";
+import { startVideoDownloadWorker } from "./video-download-worker.js";
 import { setupCookies } from "./startup.js";
 import { promises as fs } from "fs";
 import path from "path";
@@ -92,4 +93,6 @@ app.get("/download/:jobId", async (req, res) => {
 app.listen(PORT, () => {
   console.log(JSON.stringify({ action: "worker_started", port: PORT, timestamp: new Date().toISOString() }));
   startWorker();
+  startVideoDownloadWorker();
+  console.log(JSON.stringify({ action: "all_workers_started", timestamp: new Date().toISOString() }));
 });

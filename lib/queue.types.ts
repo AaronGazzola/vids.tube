@@ -17,3 +17,19 @@ export interface VideoProcessingJobResult {
   outputUrl?: string;
   error?: string;
 }
+
+export interface VideoDownloadJobData {
+  videoId: string;
+  youtubeId: string;
+  sourceUrl: string;
+}
+
+export interface VideoDownloadJobResult {
+  success: boolean;
+  storageUrl?: string;
+  storageKey?: string;
+  duration?: number;
+  fileSize?: number;
+  resolution?: string;
+  error?: string;
+}
