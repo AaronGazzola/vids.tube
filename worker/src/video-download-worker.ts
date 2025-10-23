@@ -5,7 +5,7 @@ import path from "path";
 import os from "os";
 import ffmpeg from "fluent-ffmpeg";
 import { getRedisConnection } from "./redis.config.js";
-import { downloadWithRetry, isBotDetectionError } from "./ytdlp.util.js";
+import { downloadWithRetry } from "./ytdlp.util.js";
 import { uploadToR2 } from "./r2.config.js";
 import type { VideoDownloadJobData, VideoDownloadJobResult } from "./types.js";
 
@@ -52,14 +52,6 @@ async function downloadVideo(data: VideoDownloadJobData): Promise<VideoDownloadJ
       format: "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
       mergeOutputFormat: "mp4",
     };
-
-    if (process.env.YT_COOKIES_PATH) {
-      ytDlpOptions.cookies = process.env.YT_COOKIES_PATH;
-    }
-
-    if (process.env.YT_USER_AGENT) {
-      ytDlpOptions.userAgent = process.env.YT_USER_AGENT;
-    }
 
     await downloadWithRetry(sourceUrl, ytDlpOptions, 3);
 
@@ -139,10 +131,6 @@ async function downloadVideo(data: VideoDownloadJobData): Promise<VideoDownloadJ
     });
 
     await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
-
-    if (isBotDetectionError(error)) {
-      throw new Error("YouTube bot detection triggered. Please refresh cookies and try again.");
-    }
 
     return {
       success: false,

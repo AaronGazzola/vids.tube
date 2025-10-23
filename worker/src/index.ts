@@ -5,7 +5,6 @@ config({ path: resolve(process.cwd(), "../.env") });
 import express from "express";
 import { startWorker } from "./worker.js";
 import { startVideoDownloadWorker } from "./video-download-worker.js";
-import { setupCookies } from "./startup.js";
 import { promises as fs } from "fs";
 import path from "path";
 import os from "os";
@@ -13,8 +12,6 @@ import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-
-await setupCookies();
 
 app.use(cors());
 app.use(express.json());
