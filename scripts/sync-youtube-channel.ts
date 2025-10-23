@@ -14,6 +14,7 @@ const execAsync = promisify(exec);
 const CHANNEL_HANDLE = "@azanything";
 const CHANNEL_URL = `https://www.youtube.com/${CHANNEL_HANDLE}/streams`;
 const YT_DLP_PATH = "/opt/homebrew/bin/yt-dlp";
+const COOKIES_PATH = path.join(process.cwd(), "worker/cookies/cookies.txt");
 
 const prisma = new PrismaClient();
 
@@ -53,7 +54,7 @@ async function getChannelVideoIds(): Promise<string[]> {
   console.log(JSON.stringify({ action: "fetching_channel_videos", channel: CHANNEL_HANDLE }));
 
   const { stdout } = await execAsync(
-    `${YT_DLP_PATH} "${CHANNEL_URL}" --flat-playlist --skip-download --dump-single-json`
+    `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${CHANNEL_URL}" --flat-playlist --skip-download --dump-single-json`
   );
 
   const data = JSON.parse(stdout);
@@ -93,7 +94,7 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
     console.log(JSON.stringify({ action: "downloading_video", youtubeId }));
 
     await execAsync(
-      `${YT_DLP_PATH} "${sourceUrl}" -o "${tempVideoPath}" -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4`
+      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" -o "${tempVideoPath}" -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4`
     );
 
     const stats = await fs.stat(tempVideoPath);
