@@ -3,9 +3,11 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import * as os from "os";
 import * as ffmpeg from "fluent-ffmpeg";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import { exec } from "child_process";
 import { promisify } from "util";
+import { createReadStream } from "fs";
 
 const execAsync = promisify(exec);
 
@@ -24,15 +26,20 @@ const r2Client = new S3Client({
   },
 });
 
-async function uploadToR2(bucket: string, key: string, body: Buffer, contentType: string): Promise<string> {
-  const command = new PutObjectCommand({
-    Bucket: bucket,
-    Key: key,
-    Body: body,
-    ContentType: contentType,
+async function uploadToR2(bucket: string, key: string, filePath: string, contentType: string): Promise<string> {
+  const fileStream = createReadStream(filePath);
+
+  const upload = new Upload({
+    client: r2Client,
+    params: {
+      Bucket: bucket,
+      Key: key,
+      Body: fileStream,
+      ContentType: contentType,
+    },
   });
 
-  await r2Client.send(command);
+  await upload.done();
 
   const publicDomain = process.env.R2_PUBLIC_DOMAIN;
   if (publicDomain) {
@@ -104,11 +111,10 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
     }
 
     const storageKey = `videos/${youtubeId}.mp4`;
-    const videoBuffer = await fs.readFile(tempVideoPath);
 
     console.log(JSON.stringify({ action: "uploading_to_r2", youtubeId, storageKey }));
 
-    const storageUrl = await uploadToR2(bucket, storageKey, videoBuffer, "video/mp4");
+    const storageUrl = await uploadToR2(bucket, storageKey, tempVideoPath, "video/mp4");
 
     console.log(JSON.stringify({ action: "upload_complete", youtubeId, storageUrl }));
 
