@@ -1,5 +1,15 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { R2UploadOptions, R2DownloadOptions, R2DeleteOptions, R2UploadResult } from "./r2.types";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
+import {
+  R2DeleteOptions,
+  R2DownloadOptions,
+  R2UploadOptions,
+  R2UploadResult,
+} from "./r2.types";
 
 export function getR2Client(): S3Client {
   const accountId = process.env.R2_ACCOUNT_ID;
@@ -20,7 +30,9 @@ export function getR2Client(): S3Client {
   });
 }
 
-export async function uploadToR2(options: R2UploadOptions): Promise<R2UploadResult> {
+export async function uploadToR2(
+  options: R2UploadOptions
+): Promise<R2UploadResult> {
   const client = getR2Client();
 
   const command = new PutObjectCommand({
@@ -45,7 +57,9 @@ export async function uploadToR2(options: R2UploadOptions): Promise<R2UploadResu
   };
 }
 
-export async function downloadFromR2(options: R2DownloadOptions): Promise<ReadableStream> {
+export async function downloadFromR2(
+  options: R2DownloadOptions
+): Promise<ReadableStream> {
   const client = getR2Client();
 
   const command = new GetObjectCommand({

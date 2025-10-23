@@ -20,18 +20,20 @@ import {
 } from "@dnd-kit/sortable";
 import { ClipItem } from "./ClipItem";
 import { ClipsListProps } from "./ClipsList.types";
-import { useCreateProject, useProcessVideo } from "@/app/page.hooks";
+import { useCreateProject, useProcessVideo } from "@/lib/editor.hooks";
 import { Loader2, Play } from "lucide-react";
+import { useProcessingStore } from "@/app/editor/[videoId]/page.stores";
 
 export function ClipsList({ className, disabled }: ClipsListProps) {
   const clips = useEditorStore((state) => state.clips);
   const clearClips = useEditorStore((state) => state.clearClips);
   const reorderClips = useEditorStore((state) => state.reorderClips);
   const videoId = useEditorStore((state) => state.videoId);
-  const videoUrl = useEditorStore((state) => state.videoUrl);
+  const storageUrl = useEditorStore((state) => state.storageUrl);
+  const { setCurrentJob } = useProcessingStore();
 
   const createProject = useCreateProject();
-  const processVideo = useProcessVideo();
+  const processVideo = useProcessVideo(setCurrentJob);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: disabled ? 99999 : 0 } }),
@@ -55,11 +57,11 @@ export function ClipsList({ className, disabled }: ClipsListProps) {
   };
 
   const handleProcessVideo = async () => {
-    if (!videoId || !videoUrl || clips.length === 0) return;
+    if (!videoId || !storageUrl || clips.length === 0) return;
 
     const project = await createProject.mutateAsync({
       videoId,
-      videoUrl,
+      videoUrl: storageUrl,
       clips,
     });
 

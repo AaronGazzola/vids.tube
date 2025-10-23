@@ -6,17 +6,39 @@ import { conditionalLog, LOG_LABELS } from "@/lib/log.util";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { toast as sonnerToast } from "sonner";
-import {
-  createProjectAction,
-  getProcessingJobAction,
-  processVideoAction,
-} from "./page.actions";
+import { getVideoAction, getProcessingJobAction } from "./page.actions";
+import { createProjectAction, processVideoAction } from "./shared.actions";
 import { useProcessingStore } from "./page.stores";
 import { CreateProjectData, ProcessVideoData } from "./page.types";
 
 export function useKeyboardShortcuts() {
   return null;
 }
+
+export const useGetVideo = (youtubeId: string) => {
+  return useQuery({
+    queryKey: ["video", youtubeId],
+    queryFn: async () => {
+      const { data: video, error } = await getVideoAction(youtubeId);
+      if (error) throw new Error(error);
+
+      const logOutput = conditionalLog(
+        {
+          action: "video_fetched",
+          youtubeId,
+          status: video?.status,
+        },
+        { label: LOG_LABELS.API }
+      );
+      if (logOutput) {
+        console.log(logOutput);
+      }
+
+      return video;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+};
 
 export const useCreateProject = () => {
   return useMutation({

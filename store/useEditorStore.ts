@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { extractVideoId } from '@/lib/youtube';
 import { Clip } from '@/lib/clip.types';
-import { YouTubePlayer } from '@/lib/youtube-player.types';
 
 interface CropPosition {
   x: number;
@@ -19,8 +17,8 @@ interface VideoBounds {
 }
 
 interface EditorStore {
-  videoUrl: string | null;
   videoId: string | null;
+  storageUrl: string | null;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
@@ -29,8 +27,8 @@ interface EditorStore {
   videoBounds: VideoBounds | null;
   cropFrame: CropPosition;
   clips: Clip[];
-  playerInstance: YouTubePlayer | null;
-  setVideoUrl: (url: string) => void;
+  playerInstance: HTMLVideoElement | null;
+  setVideo: (videoId: string, storageUrl: string) => void;
   clearVideo: () => void;
   setIsPlaying: (playing: boolean) => void;
   setCurrentTime: (time: number) => void;
@@ -45,7 +43,7 @@ interface EditorStore {
   reorderClips: (startIndex: number, endIndex: number) => void;
   clearClips: () => void;
   resetEditor: () => void;
-  setPlayerInstance: (player: YouTubePlayer | null) => void;
+  setPlayerInstance: (player: HTMLVideoElement | null) => void;
 }
 
 const DEFAULT_CROP_FRAME: CropPosition = {
@@ -58,8 +56,8 @@ const DEFAULT_CROP_FRAME: CropPosition = {
 export const useEditorStore = create<EditorStore>()(
   persist(
     (set) => ({
-  videoUrl: null,
   videoId: null,
+  storageUrl: null,
   isPlaying: false,
   currentTime: 0,
   duration: 0,
@@ -70,11 +68,8 @@ export const useEditorStore = create<EditorStore>()(
   clips: [],
   playerInstance: null,
 
-  setVideoUrl: (url) => {
-    const videoId = extractVideoId(url);
-    set({ videoUrl: url, videoId });
-  },
-  clearVideo: () => set({ videoUrl: null, videoId: null }),
+  setVideo: (videoId, storageUrl) => set({ videoId, storageUrl }),
+  clearVideo: () => set({ videoId: null, storageUrl: null }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentTime: (time) => set({ currentTime: time }),
   setDuration: (duration) => set({ duration }),
@@ -120,8 +115,8 @@ export const useEditorStore = create<EditorStore>()(
 
   resetEditor: () =>
     set({
-      videoUrl: null,
       videoId: null,
+      storageUrl: null,
       isPlaying: false,
       currentTime: 0,
       duration: 0,
@@ -135,17 +130,18 @@ export const useEditorStore = create<EditorStore>()(
 }),
     {
       name: 'editor-storage',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        videoUrl: state.videoUrl,
         videoId: state.videoId,
+        storageUrl: state.storageUrl,
         clips: state.clips,
         cropFrame: state.cropFrame,
       }),
       migrate: (persistedState: any, version: number) => {
-        if (version === 0) {
-          return persistedState;
+        if (version < 2) {
+          const { videoUrl, ...rest } = persistedState;
+          return { ...rest, storageUrl: null };
         }
         return persistedState;
       },
@@ -155,9 +151,9 @@ export const useEditorStore = create<EditorStore>()(
 
 export const useVideoState = () =>
   useEditorStore((state) => ({
-    videoUrl: state.videoUrl,
     videoId: state.videoId,
-    setVideoUrl: state.setVideoUrl,
+    storageUrl: state.storageUrl,
+    setVideo: state.setVideo,
     clearVideo: state.clearVideo,
   }));
 

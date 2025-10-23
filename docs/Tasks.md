@@ -1,0 +1,1 @@
+- [ ] Update the sync script to add thumbnails to the database

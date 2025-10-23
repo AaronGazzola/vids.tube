@@ -25,9 +25,9 @@ export const PlaybackControls = () => {
   const handlePlayPause = () => {
     if (!playerInstance) return;
     if (isPlaying) {
-      playerInstance.pauseVideo();
+      playerInstance.pause();
     } else {
-      playerInstance.playVideo();
+      playerInstance.play();
     }
   };
 
@@ -38,40 +38,40 @@ export const PlaybackControls = () => {
 
   const handleSeekCommit = () => {
     if (!playerInstance) return;
-    playerInstance.seekTo(seekValue, true);
+    playerInstance.currentTime = seekValue;
     setIsSeeking(false);
   };
 
   const handleSkipBackward = () => {
     if (!playerInstance) return;
     const newTime = Math.max(0, currentTime - 5);
-    playerInstance.seekTo(newTime, true);
+    playerInstance.currentTime = newTime;
   };
 
   const handleSkipForward = () => {
     if (!playerInstance) return;
     const newTime = Math.min(duration, currentTime + 5);
-    playerInstance.seekTo(newTime, true);
+    playerInstance.currentTime = newTime;
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!playerInstance) return;
     const newVolume = Number(e.target.value);
     setVolume(newVolume);
-    playerInstance.setVolume(newVolume);
+    playerInstance.volume = newVolume / 100;
     if (newVolume > 0 && isMuted) {
       setIsMuted(false);
-      playerInstance.unMute();
+      playerInstance.muted = false;
     }
   };
 
   const handleMuteToggle = () => {
     if (!playerInstance) return;
     if (isMuted) {
-      playerInstance.unMute();
+      playerInstance.muted = false;
       setIsMuted(false);
     } else {
-      playerInstance.mute();
+      playerInstance.muted = true;
       setIsMuted(true);
     }
   };

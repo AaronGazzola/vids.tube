@@ -10,7 +10,7 @@ function EditorHeader() {
   return (
     <header className="border-b bg-background">
       <div className="container mx-auto px-4 py-3">
-        <h1 className="text-xl font-bold">YouTube Clip Editor</h1>
+        <h1 className="text-xl font-bold">Video Clip Editor</h1>
       </div>
     </header>
   );
