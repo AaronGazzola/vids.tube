@@ -1,1 +1,2 @@
 - [ ] Update the sync script to add thumbnails to the database
+- [ ] Fix backend video processing

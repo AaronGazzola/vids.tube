@@ -123,7 +123,6 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
       data: {
         youtubeId,
         sourceUrl,
-        status: "READY",
         storageUrl,
         storageKey,
         fileSize: BigInt(stats.size),

@@ -1,9 +1,12 @@
 "use client";
 
+import {
+  createProjectAction,
+  processVideoAction,
+} from "@/app/editor/[videoId]/shared.actions";
 import { toast } from "@/components/ui/CustomToast";
 import { conditionalLog, LOG_LABELS } from "@/lib/log.util";
 import { useMutation } from "@tanstack/react-query";
-import { createProjectAction, processVideoAction } from "@/app/editor/[videoId]/shared.actions";
 
 export interface CreateProjectData {
   videoId: string;
@@ -73,6 +76,7 @@ export const useProcessVideo = (setCurrentJob: (job: any) => void) => {
       if (logOutput) {
         console.log(logOutput);
       }
+
       toast.error(
         "Failed to process video",
         error.message || "An unexpected error occurred"

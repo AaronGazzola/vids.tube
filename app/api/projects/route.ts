@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { conditionalLog } from "@/lib/log.util";
 import { extractVideoId } from "@/lib/youtube";
-import { enqueueVideoDownloadJob } from "@/lib/queue.util";
 
 const LOG_LABEL = "api-projects";
 
@@ -28,34 +27,24 @@ export async function POST(request: NextRequest) {
 
     conditionalLog({ action: "create_project", videoId, youtubeId, clipCount: clips.length }, { label: LOG_LABEL });
 
-    let video = await prisma.video.findUnique({
+    const video = await prisma.video.findUnique({
       where: { youtubeId },
     });
 
     if (!video) {
-      video = await prisma.video.create({
-        data: {
-          youtubeId,
-          sourceUrl: videoUrl,
-          status: "DOWNLOADING",
-        },
-      });
-
-      await enqueueVideoDownloadJob({
-        videoId: video.id,
-        youtubeId,
-        sourceUrl: videoUrl,
-      });
-
-      conditionalLog({ action: "video_download_queued", videoId: video.id, youtubeId }, { label: LOG_LABEL });
-    } else {
-      await prisma.video.update({
-        where: { id: video.id },
-        data: { lastUsedAt: new Date() },
-      });
-
-      conditionalLog({ action: "video_already_exists", videoId: video.id, status: video.status }, { label: LOG_LABEL });
+      conditionalLog({ action: "video_not_found", youtubeId }, { label: LOG_LABEL });
+      return NextResponse.json(
+        { error: "Video not found. Please sync this video using the sync script." },
+        { status: 404 }
+      );
     }
+
+    await prisma.video.update({
+      where: { id: video.id },
+      data: { lastUsedAt: new Date() },
+    });
+
+    conditionalLog({ action: "video_found", videoId: video.id, youtubeId }, { label: LOG_LABEL });
 
     const project = await prisma.project.create({
       data: {
@@ -75,7 +64,6 @@ export async function POST(request: NextRequest) {
       ...project,
       video: {
         id: video.id,
-        status: video.status,
         storageUrl: video.storageUrl,
       },
     });

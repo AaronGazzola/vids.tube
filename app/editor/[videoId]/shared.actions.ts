@@ -1,8 +1,8 @@
 "use server";
 
 import { ActionResponse, getActionResponse } from "@/lib/action.utils";
+import { ProcessingJob, Project } from "@/lib/generated/prisma";
 import { prisma } from "@/lib/prisma";
-import { Project, ProcessingJob, JobStatus } from "@/lib/generated/prisma";
 import { CreateProjectData, ProcessVideoData } from "./page.types";
 
 export const createProjectAction = async (
@@ -61,7 +61,10 @@ export const processVideoAction = async (
         data: {
           status: "FAILED",
           currentStep: "Failed to enqueue job",
-          error: bgError instanceof Error ? bgError.message : "Unknown error enqueuing job",
+          error:
+            bgError instanceof Error
+              ? bgError.message
+              : "Unknown error enqueuing job",
         },
       });
       throw new Error("Failed to start video processing");

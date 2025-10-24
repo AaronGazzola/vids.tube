@@ -16,8 +16,8 @@ export const getVideoAction = async (
       throw new Error("Video not found");
     }
 
-    if (video.status !== "READY") {
-      throw new Error("Video is not ready for editing");
+    if (!video.storageUrl) {
+      throw new Error("Video not synced to R2 storage");
     }
 
     return getActionResponse({ data: video });

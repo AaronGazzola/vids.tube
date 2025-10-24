@@ -7,9 +7,6 @@ import { Video } from "@/lib/generated/prisma";
 export const getVideosAction = async (): Promise<ActionResponse<Video[]>> => {
   try {
     const videos = await prisma.video.findMany({
-      where: {
-        status: "READY",
-      },
       orderBy: {
         downloadedAt: "desc",
       },

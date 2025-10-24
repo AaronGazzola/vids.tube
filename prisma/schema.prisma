@@ -46,7 +46,6 @@ model Video {
   id            String      @id @default(cuid())
   youtubeId     String      @unique
   sourceUrl     String
-  status        VideoStatus @default(DOWNLOADING)
   storageUrl    String?
   storageKey    String?
   duration      Float?
@@ -54,7 +53,6 @@ model Video {
   resolution    String?
   downloadedAt  DateTime?
   lastUsedAt    DateTime    @default(now())
-  error         String?
   projects      Project[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -65,11 +63,4 @@ enum JobStatus {
   PROCESSING
   COMPLETED
   FAILED
-}
-
-enum VideoStatus {
-  DOWNLOADING
-  READY
-  FAILED
-  DELETED
 }

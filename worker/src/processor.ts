@@ -132,12 +132,8 @@ export async function processVideo(
 
     const video = project.videos[0];
 
-    if (video.status !== "READY") {
-      throw new Error(`Video not ready for processing. Current status: ${video.status}`);
-    }
-
     if (!video.storageUrl) {
-      throw new Error("Video storage URL not available");
+      throw new Error("Video not found in R2 storage. Please sync this video first.");
     }
 
     const tempDir = path.join(os.tmpdir(), `video-process-${Date.now()}`);
