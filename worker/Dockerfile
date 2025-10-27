@@ -23,8 +23,8 @@ COPY package*.json ./
 # Install all dependencies (including dev for build)
 RUN npm ci
 
-# Copy prisma schema (Railway will copy from repo root)
-COPY prisma ./prisma
+# Copy prisma schema from root
+COPY ../prisma ./prisma
 
 # Generate Prisma client
 RUN npx prisma generate

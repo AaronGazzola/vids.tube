@@ -1,4 +1,4 @@
-import { PrismaClient } from "../../lib/generated/prisma/index.js";
+import { PrismaClient } from "@prisma/client";
 import path from "path";
 import os from "os";
 import ffmpeg from "fluent-ffmpeg";
