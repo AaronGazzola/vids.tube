@@ -9,7 +9,8 @@
     "lint": "eslint",
     "install:worker": "cd worker && PATH=\"../.local/bin:$PATH\" npm install && cd ..",
     "sync": "tsx scripts/sync-youtube-channel.ts",
-    "postinstall": "PYTHON=python3 npm run postinstall:yt-dlp",
+    "postinstall": "node -e \"process.exit(0)\"",
+    "postinstall:local": "PYTHON=python3 npm run postinstall:yt-dlp",
     "postinstall:yt-dlp": "node node_modules/yt-dlp-exec/scripts/postinstall.js || true"
   },
   "dependencies": {
