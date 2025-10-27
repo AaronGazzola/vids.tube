@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.914.0",
-    "@prisma/client": "^6.17.1",
     "@types/cors": "^2.8.19",
     "bullmq": "^5.29.2",
     "cors": "^2.8.5",
@@ -22,7 +21,6 @@
     "@types/express": "^5.0.0",
     "@types/fluent-ffmpeg": "^2.1.27",
     "@types/node": "^20",
-    "prisma": "^6.17.1",
     "tsx": "^4.19.2",
     "typescript": "^5"
   }

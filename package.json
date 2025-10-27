@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "prisma generate && next build --turbopack",
+    "build:worker": "cd worker && npm run build && cd ..",
     "start": "next start",
     "lint": "eslint",
     "install:worker": "cd worker && PATH=\"../.local/bin:$PATH\" npm install && cd ..",

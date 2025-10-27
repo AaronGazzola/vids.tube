@@ -1,8 +1,8 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../../lib/generated/prisma/index.js";
 import path from "path";
 import os from "os";
 import ffmpeg from "fluent-ffmpeg";
-import { promises as fs } from "fs";
+import { promises as fs, createWriteStream } from "fs";
 import { execSync } from "child_process";
 import { Readable } from "stream";
 import { finished } from "stream/promises";
@@ -66,33 +66,60 @@ async function updateJobProgress(
   }
 }
 
-async function downloadVideoFromR2(storageUrl: string, outputPath: string): Promise<string> {
+async function downloadVideoSegmentFromR2(
+  storageUrl: string,
+  outputPath: string,
+  startTime: number,
+  duration: number
+): Promise<string> {
   console.log(JSON.stringify({
-    action: "downloading_from_r2",
-    storageUrl
+    action: "downloading_segment_from_r2",
+    storageUrl,
+    startTime,
+    duration
   }));
 
-  const response = await fetch(storageUrl);
+  return new Promise<string>((resolve, reject) => {
+    let stderrOutput = "";
 
-  if (!response.ok) {
-    throw new Error(`Failed to download video from R2: ${response.statusText}`);
-  }
+    const command = ffmpeg(storageUrl)
+      .setStartTime(startTime)
+      .setDuration(duration)
+      .outputOptions([
+        "-c copy",
+        "-avoid_negative_ts make_zero"
+      ])
+      .output(outputPath)
+      .on("start", (commandLine) => {
+        console.log(JSON.stringify({
+          action: "ffmpeg_segment_download_start",
+          command: commandLine
+        }));
+      })
+      .on("stderr", (stderrLine) => {
+        stderrOutput += stderrLine + "\n";
+      })
+      .on("end", async () => {
+        const stats = await fs.stat(outputPath);
+        console.log(JSON.stringify({
+          action: "segment_download_complete",
+          fileSize: stats.size,
+          startTime,
+          duration
+        }));
+        resolve(outputPath);
+      })
+      .on("error", (error: Error) => {
+        console.log(JSON.stringify({
+          action: "segment_download_error",
+          error: error.message,
+          stderr: stderrOutput
+        }));
+        reject(error);
+      });
 
-  const fileStream = fs.createWriteStream(outputPath);
-
-  if (!response.body) {
-    throw new Error("No response body from R2");
-  }
-
-  await finished(Readable.fromWeb(response.body as any).pipe(fileStream));
-
-  const stats = await fs.stat(outputPath);
-  console.log(JSON.stringify({
-    action: "r2_download_complete",
-    fileSize: stats.size
-  }));
-
-  return outputPath;
+    command.run();
+  });
 }
 
 export async function processVideo(
@@ -119,18 +146,19 @@ export async function processVideo(
 
     const project = await prisma.project.findUnique({
       where: { id: projectId },
-      include: {
-        videos: {
-          take: 1,
-        },
-      },
     });
 
-    if (!project || !project.videos || project.videos.length === 0) {
-      throw new Error("Project or video not found");
+    if (!project) {
+      throw new Error("Project not found");
     }
 
-    const video = project.videos[0];
+    const video = await prisma.video.findUnique({
+      where: { youtubeId: project.videoId },
+    });
+
+    if (!video) {
+      throw new Error("Video not found");
+    }
 
     if (!video.storageUrl) {
       throw new Error("Video not found in R2 storage. Please sync this video first.");
@@ -140,9 +168,24 @@ export async function processVideo(
     await fs.mkdir(tempDir, { recursive: true });
     const outputPath = path.join(tempDir, `output-${jobId}.mp4`);
 
+    const minStartTime = Math.min(...clips.map(c => c.startTime));
+    const maxEndTime = Math.max(...clips.map(c => c.endTime));
+    const bufferSeconds = 2;
+    const segmentStart = Math.max(0, minStartTime - bufferSeconds);
+    const segmentDuration = maxEndTime - segmentStart + bufferSeconds;
+
+    console.log(JSON.stringify({
+      action: "calculated_segment_bounds",
+      minStartTime,
+      maxEndTime,
+      segmentStart,
+      segmentDuration,
+      originalDuration: video.duration
+    }));
+
     await updateJobProgress(
       jobId,
-      "Downloading video from storage...",
+      "Downloading required video segment...",
       1,
       4,
       0,
@@ -150,15 +193,20 @@ export async function processVideo(
     );
 
     const downloadedVideoPath = path.join(tempDir, "source.mp4");
-    await downloadVideoFromR2(video.storageUrl, downloadedVideoPath);
+    await downloadVideoSegmentFromR2(
+      video.storageUrl,
+      downloadedVideoPath,
+      segmentStart,
+      segmentDuration
+    );
 
     const downloadedStats = await fs.stat(downloadedVideoPath);
     if (!downloadedStats.isFile() || downloadedStats.size === 0) {
-      throw new Error(`Downloaded video is invalid: size=${downloadedStats.size}`);
+      throw new Error(`Downloaded video segment is invalid: size=${downloadedStats.size}`);
     }
 
     console.log(JSON.stringify({
-      action: "video_downloaded_from_r2",
+      action: "video_segment_downloaded_from_r2",
       fileSize: downloadedStats.size
     }));
 
@@ -192,6 +240,8 @@ export async function processVideo(
 
       await new Promise<void>((resolve, reject) => {
         const duration = clip.endTime - clip.startTime;
+        const adjustedStartTime = clip.startTime - segmentStart;
+
         let progressTimeout: NodeJS.Timeout;
         let stderrOutput = "";
 
@@ -211,7 +261,7 @@ export async function processVideo(
         resetProgressTimeout();
 
         const command = ffmpeg(downloadedVideoPath)
-          .setStartTime(clip.startTime)
+          .setStartTime(adjustedStartTime)
           .setDuration(duration)
           .videoFilters([
             {

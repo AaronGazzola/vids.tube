@@ -54,7 +54,8 @@ async function getChannelVideoIds(): Promise<string[]> {
   console.log(JSON.stringify({ action: "fetching_channel_videos", channel: CHANNEL_HANDLE }));
 
   const { stdout } = await execAsync(
-    `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${CHANNEL_URL}" --flat-playlist --skip-download --dump-single-json`
+    `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${CHANNEL_URL}" --flat-playlist --skip-download --dump-single-json`,
+    { maxBuffer: 10 * 1024 * 1024 }
   );
 
   const data = JSON.parse(stdout);
@@ -90,7 +91,8 @@ async function downloadAndUploadThumbnail(youtubeId: string, tempDir: string): P
     console.log(JSON.stringify({ action: "downloading_thumbnail", youtubeId }));
 
     await execAsync(
-      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" --write-thumbnail --skip-download --convert-thumbnails jpg -o "${path.join(tempDir, youtubeId)}"`
+      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" --write-thumbnail --skip-download --convert-thumbnails jpg -o "${path.join(tempDir, youtubeId)}"`,
+      { maxBuffer: 10 * 1024 * 1024 }
     );
 
     const stats = await fs.stat(tempThumbnailPath);
@@ -131,7 +133,8 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
     console.log(JSON.stringify({ action: "downloading_video", youtubeId }));
 
     await execAsync(
-      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" -o "${tempVideoPath}" -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4`
+      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" -o "${tempVideoPath}" -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4`,
+      { maxBuffer: 10 * 1024 * 1024 }
     );
 
     const stats = await fs.stat(tempVideoPath);
