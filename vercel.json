@@ -1,4 +1,4 @@
 {
-  "installCommand": "npm install --legacy-peer-deps || npm install",
+  "installCommand": "npm install --legacy-peer-deps --ignore-scripts || npm install --ignore-scripts",
   "buildCommand": "prisma generate && next build --turbopack"
 }
