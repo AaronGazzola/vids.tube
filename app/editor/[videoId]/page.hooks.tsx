@@ -48,14 +48,20 @@ export const useCreateProject = () => {
       return project;
     },
     onError: (error: Error) => {
-      const logOutput = conditionalLog(error, { label: LOG_LABELS.VIDEO });
+      const errorMessage = error.message || "An unexpected error occurred";
+      const logOutput = conditionalLog(
+        {
+          action: "create_project_failed",
+          error: errorMessage,
+          stack: error.stack,
+        },
+        { label: LOG_LABELS.VIDEO }
+      );
       if (logOutput) {
         console.log(logOutput);
       }
-      toast.error(
-        "Failed to create project",
-        error.message || "An unexpected error occurred"
-      );
+      console.error("Failed to create project:", error);
+      toast.error("Failed to create project", errorMessage);
     },
   });
 };
@@ -96,14 +102,20 @@ export const useProcessVideo = () => {
       }
     },
     onError: (error: Error) => {
-      const logOutput = conditionalLog(error, { label: LOG_LABELS.VIDEO });
+      const errorMessage = error.message || "An unexpected error occurred";
+      const logOutput = conditionalLog(
+        {
+          action: "process_video_failed",
+          error: errorMessage,
+          stack: error.stack,
+        },
+        { label: LOG_LABELS.VIDEO }
+      );
       if (logOutput) {
         console.log(logOutput);
       }
-      toast.error(
-        "Failed to process video",
-        error.message || "An unexpected error occurred"
-      );
+      console.error("Failed to process video:", error);
+      toast.error("Failed to process video", errorMessage);
     },
   });
 };

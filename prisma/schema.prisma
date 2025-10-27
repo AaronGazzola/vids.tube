@@ -48,6 +48,8 @@ model Video {
   sourceUrl     String
   storageUrl    String?
   storageKey    String?
+  thumbnailUrl  String?
+  thumbnailKey  String?
   duration      Float?
   fileSize      BigInt?
   resolution    String?

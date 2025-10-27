@@ -1,8 +1,9 @@
 "use client";
 
-import { Loader2, CheckCircle2, XCircle, Clock, X } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Clock, X, Copy } from "lucide-react";
 import { JobStatus } from "@/app/page.types";
 import { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +29,7 @@ interface ProcessingToastProps {
 
 export function ProcessingToast({ status, currentStep, progress, totalSteps, currentClip, totalClips, error, outputUrl, onClose }: ProcessingToastProps) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (status === "COMPLETED" && outputUrl) {
@@ -97,6 +99,17 @@ export function ProcessingToast({ status, currentStep, progress, totalSteps, cur
     onClose?.();
   };
 
+  const handleCopyError = async () => {
+    if (!error) return;
+    try {
+      await navigator.clipboard.writeText(error);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (copyError) {
+      throw new Error("Failed to copy to clipboard");
+    }
+  };
+
   const progressText = getProgressText();
 
   return (
@@ -113,8 +126,18 @@ export function ProcessingToast({ status, currentStep, progress, totalSteps, cur
             </div>
           )}
           {status === "FAILED" && error && (
-            <div className="text-xs text-red-500 ml-8 mt-1">
-              {error}
+            <div className="text-xs text-red-500 ml-8 mt-1 flex items-start gap-2">
+              <span className="flex-1">{error}</span>
+              <button
+                onClick={handleCopyError}
+                className={cn(
+                  "p-1 rounded hover:bg-red-100 transition-colors flex-shrink-0",
+                  copied && "bg-red-200"
+                )}
+                title={copied ? "Copied!" : "Copy error message"}
+              >
+                <Copy className="h-3 w-3" />
+              </button>
             </div>
           )}
         </div>

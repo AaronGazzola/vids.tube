@@ -44,7 +44,7 @@ async function uploadToR2(bucket: string, key: string, filePath: string, content
 
   const publicDomain = process.env.R2_PUBLIC_DOMAIN;
   if (publicDomain) {
-    return `https://${publicDomain}/${key}`;
+    return `${publicDomain}/${key}`;
   }
 
   return `https://${bucket}.${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
@@ -54,7 +54,8 @@ async function getChannelVideoIds(): Promise<string[]> {
   console.log(JSON.stringify({ action: "fetching_channel_videos", channel: CHANNEL_HANDLE }));
 
   const { stdout } = await execAsync(
-    `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${CHANNEL_URL}" --flat-playlist --skip-download --dump-single-json`
+    `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${CHANNEL_URL}" --flat-playlist --skip-download --dump-single-json`,
+    { maxBuffer: 10 * 1024 * 1024 }
   );
 
   const data = JSON.parse(stdout);
@@ -82,6 +83,44 @@ async function getVideoMetadata(videoPath: string): Promise<{ duration?: number;
   });
 }
 
+async function downloadAndUploadThumbnail(youtubeId: string, tempDir: string): Promise<{ thumbnailUrl: string; thumbnailKey: string } | null> {
+  try {
+    const sourceUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
+    const tempThumbnailPath = path.join(tempDir, `${youtubeId}.jpg`);
+
+    console.log(JSON.stringify({ action: "downloading_thumbnail", youtubeId }));
+
+    await execAsync(
+      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" --write-thumbnail --skip-download --convert-thumbnails jpg -o "${path.join(tempDir, youtubeId)}"`,
+      { maxBuffer: 10 * 1024 * 1024 }
+    );
+
+    const stats = await fs.stat(tempThumbnailPath);
+    if (!stats.isFile() || stats.size === 0) {
+      console.log(JSON.stringify({ action: "thumbnail_download_failed", youtubeId, reason: "invalid_file" }));
+      return null;
+    }
+
+    const bucket = process.env.R2_BUCKET;
+    if (!bucket) {
+      throw new Error("R2_BUCKET environment variable not set");
+    }
+
+    const thumbnailKey = `thumbnails/${youtubeId}.jpg`;
+
+    console.log(JSON.stringify({ action: "uploading_thumbnail_to_r2", youtubeId, thumbnailKey }));
+
+    const thumbnailUrl = await uploadToR2(bucket, thumbnailKey, tempThumbnailPath, "image/jpeg");
+
+    console.log(JSON.stringify({ action: "thumbnail_upload_complete", youtubeId, thumbnailUrl }));
+
+    return { thumbnailUrl, thumbnailKey };
+  } catch (error: unknown) {
+    console.log(JSON.stringify({ action: "thumbnail_processing_failed", youtubeId, error: error instanceof Error ? error.message : String(error) }));
+    return null;
+  }
+}
+
 async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
   const tempDir = path.join(os.tmpdir(), `sync-${Date.now()}-${youtubeId}`);
 
@@ -94,7 +133,8 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
     console.log(JSON.stringify({ action: "downloading_video", youtubeId }));
 
     await execAsync(
-      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" -o "${tempVideoPath}" -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4`
+      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" -o "${tempVideoPath}" -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" --merge-output-format mp4`,
+      { maxBuffer: 10 * 1024 * 1024 }
     );
 
     const stats = await fs.stat(tempVideoPath);
@@ -119,12 +159,16 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
 
     console.log(JSON.stringify({ action: "upload_complete", youtubeId, storageUrl }));
 
+    const thumbnailData = await downloadAndUploadThumbnail(youtubeId, tempDir);
+
     await prisma.video.create({
       data: {
         youtubeId,
         sourceUrl,
         storageUrl,
         storageKey,
+        thumbnailUrl: thumbnailData?.thumbnailUrl,
+        thumbnailKey: thumbnailData?.thumbnailKey,
         fileSize: BigInt(stats.size),
         duration: metadata.duration,
         resolution: metadata.resolution,
@@ -142,9 +186,87 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
   }
 }
 
+async function backfillMissingThumbnails(): Promise<void> {
+  console.log(JSON.stringify({ action: "backfill_thumbnails_started" }));
+
+  const videosWithoutThumbnails = await prisma.video.findMany({
+    where: {
+      thumbnailUrl: null,
+    },
+    select: {
+      youtubeId: true,
+    },
+  });
+
+  console.log(JSON.stringify({
+    action: "backfill_analysis",
+    videosWithoutThumbnails: videosWithoutThumbnails.length
+  }));
+
+  if (videosWithoutThumbnails.length === 0) {
+    console.log(JSON.stringify({ action: "backfill_complete", message: "All videos have thumbnails" }));
+    return;
+  }
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < videosWithoutThumbnails.length; i++) {
+    const { youtubeId } = videosWithoutThumbnails[i];
+    const tempDir = path.join(os.tmpdir(), `thumbnail-backfill-${Date.now()}-${youtubeId}`);
+
+    console.log(JSON.stringify({
+      action: "backfilling_thumbnail",
+      current: i + 1,
+      total: videosWithoutThumbnails.length,
+      youtubeId
+    }));
+
+    try {
+      await fs.mkdir(tempDir, { recursive: true });
+
+      const thumbnailData = await downloadAndUploadThumbnail(youtubeId, tempDir);
+
+      if (thumbnailData) {
+        await prisma.video.update({
+          where: { youtubeId },
+          data: {
+            thumbnailUrl: thumbnailData.thumbnailUrl,
+            thumbnailKey: thumbnailData.thumbnailKey,
+          },
+        });
+
+        console.log(JSON.stringify({ action: "thumbnail_backfilled", youtubeId }));
+        successCount++;
+      } else {
+        failCount++;
+      }
+
+      await fs.rm(tempDir, { recursive: true, force: true });
+    } catch (error: unknown) {
+      await fs.rm(tempDir, { recursive: true, force: true });
+      console.log(JSON.stringify({
+        action: "thumbnail_backfill_error",
+        youtubeId,
+        error: error instanceof Error ? error.message : String(error)
+      }));
+      failCount++;
+    }
+  }
+
+  console.log(JSON.stringify({
+    action: "backfill_complete",
+    total: videosWithoutThumbnails.length,
+    success: successCount,
+    failed: failCount
+  }));
+}
+
 async function main() {
   try {
     console.log(JSON.stringify({ action: "sync_started", channel: CHANNEL_HANDLE }));
+
+    await backfillMissingThumbnails();
 
     const channelVideoIds = await getChannelVideoIds();
 
