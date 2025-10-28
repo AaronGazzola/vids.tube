@@ -201,9 +201,34 @@ export const useProcessingToast = () => {
       );
 
       if (currentJob.status === "COMPLETED" && currentJob.outputUrl && !downloadedJobIds.has(currentJob.id)) {
+        const logOutput = conditionalLog(
+          {
+            action: "auto_download_triggered",
+            jobId: currentJob.id,
+            outputUrl: currentJob.outputUrl,
+          },
+          { label: LOG_LABELS.VIDEO }
+        );
+        if (logOutput) {
+          console.log(logOutput);
+        }
         downloadVideo(currentJob.outputUrl).catch((error: Error) => {
+          const errorMessage = error.message || "An unexpected error occurred";
+          const errorLog = conditionalLog(
+            {
+              action: "auto_download_failed",
+              jobId: currentJob.id,
+              outputUrl: currentJob.outputUrl,
+              error: errorMessage,
+              stack: error.stack,
+            },
+            { label: LOG_LABELS.VIDEO }
+          );
+          if (errorLog) {
+            console.log(errorLog);
+          }
           console.error("Failed to download video:", error);
-          toast.error("Failed to download video", error.message);
+          toast.error("Download failed", errorMessage);
         });
         markJobAsDownloaded(currentJob.id);
       }

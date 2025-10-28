@@ -14,6 +14,8 @@ export async function GET(
     const jobId = searchParams.get("jobId");
 
     if (!jobId) {
+      const errorLog = conditionalLog({ action: "download_error", error: "Missing jobId parameter" }, { label: LOG_LABEL });
+      if (errorLog) console.log(errorLog);
       return NextResponse.json({ error: "Missing jobId" }, { status: 400 });
     }
 
@@ -23,26 +25,51 @@ export async function GET(
     });
 
     if (!job) {
+      const errorLog = conditionalLog({ action: "download_error", error: "Job not found", jobId }, { label: LOG_LABEL });
+      if (errorLog) console.log(errorLog);
       return NextResponse.json({ error: "Job not found" }, { status: 404 });
     }
 
     if (job.status !== "COMPLETED") {
+      const errorLog = conditionalLog({ action: "download_error", error: "Video not ready", jobId, status: job.status }, { label: LOG_LABEL });
+      if (errorLog) console.log(errorLog);
       return NextResponse.json(
-        { error: "Video is not ready yet" },
+        { error: `Video is not ready yet (status: ${job.status})` },
         { status: 400 }
       );
     }
 
-    const workerUrl = process.env.WORKER_URL || "http://localhost:3001";
+    const workerUrl = process.env.WORKER_URL;
+    if (!workerUrl) {
+      const errorLog = conditionalLog({ action: "download_error", error: "WORKER_URL not configured", jobId }, { label: LOG_LABEL });
+      if (errorLog) console.log(errorLog);
+      return NextResponse.json(
+        { error: "Worker service not configured" },
+        { status: 500 }
+      );
+    }
+
     const downloadUrl = `${workerUrl}/download/${jobId}`;
 
-    const startLog = conditionalLog({ action: "download_proxy_start", jobId, downloadUrl }, { label: LOG_LABEL });
+    const startLog = conditionalLog({ action: "download_proxy_start", jobId, downloadUrl, workerUrl }, { label: LOG_LABEL });
     if (startLog) console.log(startLog);
 
     const response = await fetch(downloadUrl);
 
     if (!response.ok) {
-      throw new Error(`Worker returned ${response.status}`);
+      const errorText = await response.text();
+      const errorLog = conditionalLog({
+        action: "download_error",
+        error: "Worker request failed",
+        jobId,
+        workerUrl,
+        downloadUrl,
+        status: response.status,
+        statusText: response.statusText,
+        errorBody: errorText
+      }, { label: LOG_LABEL });
+      if (errorLog) console.log(errorLog);
+      throw new Error(`Worker returned ${response.status}: ${errorText}`);
     }
 
     const fileBuffer = await response.arrayBuffer();
@@ -58,10 +85,17 @@ export async function GET(
       },
     });
   } catch (error) {
-    const errorLog = conditionalLog({ action: "download_error", error }, { label: LOG_LABEL });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorLog = conditionalLog({
+      action: "download_error",
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined,
+      workerUrl: process.env.WORKER_URL
+    }, { label: LOG_LABEL });
     if (errorLog) console.log(errorLog);
+    console.error("Download error:", error);
     return NextResponse.json(
-      { error: "Failed to download video" },
+      { error: `Failed to download video: ${errorMessage}` },
       { status: 500 }
     );
   }
