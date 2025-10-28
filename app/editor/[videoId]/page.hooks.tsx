@@ -10,6 +10,7 @@ import { getVideoAction, getProcessingJobAction } from "./page.actions";
 import { createProjectAction, processVideoAction } from "./shared.actions";
 import { useProcessingStore } from "./page.stores";
 import { CreateProjectData, ProcessVideoData } from "./page.types";
+import { downloadVideo } from "@/lib/download.util";
 
 export function useKeyboardShortcuts() {
   return null;
@@ -26,7 +27,7 @@ export const useGetVideo = (youtubeId: string) => {
         {
           action: "video_fetched",
           youtubeId,
-          status: video?.status,
+          storageUrl: video?.storageUrl,
         },
         { label: LOG_LABELS.API }
       );
@@ -162,7 +163,7 @@ export const useProcessingStatus = (jobId: string | null, enabled = true) => {
 };
 
 export const useProcessingToast = () => {
-  const { currentJob, setCurrentJob } = useProcessingStore();
+  const { currentJob, setCurrentJob, downloadedJobIds, markJobAsDownloaded } = useProcessingStore();
   const toastIdRef = useRef<string | number | null>(null);
 
   useEffect(() => {
@@ -198,6 +199,14 @@ export const useProcessingToast = () => {
               : Infinity,
         }
       );
+
+      if (currentJob.status === "COMPLETED" && currentJob.outputUrl && !downloadedJobIds.has(currentJob.id)) {
+        downloadVideo(currentJob.outputUrl).catch((error: Error) => {
+          console.error("Failed to download video:", error);
+          toast.error("Failed to download video", error.message);
+        });
+        markJobAsDownloaded(currentJob.id);
+      }
     } else if (toastIdRef.current) {
       sonnerToast.dismiss(toastIdRef.current);
       toastIdRef.current = null;
@@ -208,7 +217,7 @@ export const useProcessingToast = () => {
         sonnerToast.dismiss(toastIdRef.current);
       }
     };
-  }, [currentJob, setCurrentJob]);
+  }, [currentJob, setCurrentJob, downloadedJobIds, markJobAsDownloaded]);
 
   return {
     isProcessing:

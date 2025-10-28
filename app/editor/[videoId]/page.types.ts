@@ -4,6 +4,8 @@ import { Clip } from "@/lib/clip.types";
 export interface ProcessingState {
   currentJob: ProcessingJob | null;
   setCurrentJob: (job: ProcessingJob | null) => void;
+  downloadedJobIds: Set<string>;
+  markJobAsDownloaded: (jobId: string) => void;
 }
 
 export interface CreateProjectData {
