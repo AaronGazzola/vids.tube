@@ -8,7 +8,7 @@ export const useClipCreator = () => {
   const [endTime, setEndTime] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([]);
 
-  const { currentTime, duration, cropFrame, videoBounds, addClip, clips } = useEditorStore();
+  const { currentTime, duration, cropFrame, videoBounds, addClip, clips, videoWidth, videoHeight } = useEditorStore();
 
   const setStartToCurrentTime = useCallback(() => {
     setStartTime(currentTime);
@@ -62,7 +62,9 @@ export const useClipCreator = () => {
       cropFrame.y,
       cropFrame.width,
       cropFrame.height,
-      videoBounds
+      videoBounds,
+      videoWidth,
+      videoHeight
     );
 
     addClip({

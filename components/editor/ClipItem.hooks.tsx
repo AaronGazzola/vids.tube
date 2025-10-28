@@ -10,6 +10,8 @@ export function useClipItem(clipId: string): UseClipItemReturn {
   const setCropFrame = useEditorStore((state) => state.setCropFrame);
   const playerInstance = useEditorStore((state) => state.playerInstance);
   const videoBounds = useEditorStore((state) => state.videoBounds);
+  const videoWidth = useEditorStore((state) => state.videoWidth);
+  const videoHeight = useEditorStore((state) => state.videoHeight);
 
   const handleEdit = () => {
     if (!clip) throw new Error("Clip not found");
@@ -20,7 +22,9 @@ export function useClipItem(clipId: string): UseClipItemReturn {
       clip.cropY,
       clip.cropWidth,
       clip.cropHeight,
-      videoBounds
+      videoBounds,
+      videoWidth,
+      videoHeight
     );
 
     setCropFrame(containerCoords);

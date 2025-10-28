@@ -83,6 +83,40 @@ async function getVideoMetadata(videoPath: string): Promise<{ duration?: number;
   });
 }
 
+async function getYouTubeMetadata(youtubeId: string): Promise<{
+  title?: string;
+  description?: string;
+  publishedAt?: Date;
+  viewCount?: number;
+  likeCount?: number;
+  channelTitle?: string;
+}> {
+  try {
+    const sourceUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
+
+    console.log(JSON.stringify({ action: "fetching_youtube_metadata", youtubeId }));
+
+    const { stdout } = await execAsync(
+      `${YT_DLP_PATH} --cookies "${COOKIES_PATH}" "${sourceUrl}" --dump-single-json --skip-download`,
+      { maxBuffer: 10 * 1024 * 1024 }
+    );
+
+    const data = JSON.parse(stdout);
+
+    return {
+      title: data.title || undefined,
+      description: data.description || undefined,
+      publishedAt: data.upload_date ? new Date(`${data.upload_date.slice(0, 4)}-${data.upload_date.slice(4, 6)}-${data.upload_date.slice(6, 8)}`) : undefined,
+      viewCount: data.view_count || undefined,
+      likeCount: data.like_count || undefined,
+      channelTitle: data.channel || data.uploader || undefined,
+    };
+  } catch (error: unknown) {
+    console.log(JSON.stringify({ action: "youtube_metadata_fetch_failed", youtubeId, error: error instanceof Error ? error.message : String(error) }));
+    return {};
+  }
+}
+
 async function downloadAndUploadThumbnail(youtubeId: string, tempDir: string): Promise<{ thumbnailUrl: string; thumbnailKey: string } | null> {
   try {
     const sourceUrl = `https://www.youtube.com/watch?v=${youtubeId}`;
@@ -161,6 +195,8 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
 
     const thumbnailData = await downloadAndUploadThumbnail(youtubeId, tempDir);
 
+    const youtubeMetadata = await getYouTubeMetadata(youtubeId);
+
     await prisma.video.create({
       data: {
         youtubeId,
@@ -174,6 +210,12 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
         resolution: metadata.resolution,
         downloadedAt: new Date(),
         lastUsedAt: new Date(),
+        title: youtubeMetadata.title,
+        description: youtubeMetadata.description,
+        publishedAt: youtubeMetadata.publishedAt,
+        viewCount: youtubeMetadata.viewCount,
+        likeCount: youtubeMetadata.likeCount,
+        channelTitle: youtubeMetadata.channelTitle,
       },
     });
 
@@ -184,6 +226,76 @@ async function downloadAndUploadVideo(youtubeId: string): Promise<void> {
     await fs.rm(tempDir, { recursive: true, force: true });
     throw error;
   }
+}
+
+async function backfillMissingMetadata(): Promise<void> {
+  console.log(JSON.stringify({ action: "backfill_metadata_started" }));
+
+  const videosWithoutMetadata = await prisma.video.findMany({
+    where: {
+      title: null,
+    },
+    select: {
+      youtubeId: true,
+    },
+  });
+
+  console.log(JSON.stringify({
+    action: "backfill_analysis",
+    videosWithoutMetadata: videosWithoutMetadata.length
+  }));
+
+  if (videosWithoutMetadata.length === 0) {
+    console.log(JSON.stringify({ action: "backfill_complete", message: "All videos have metadata" }));
+    return;
+  }
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < videosWithoutMetadata.length; i++) {
+    const { youtubeId } = videosWithoutMetadata[i];
+
+    console.log(JSON.stringify({
+      action: "backfilling_metadata",
+      current: i + 1,
+      total: videosWithoutMetadata.length,
+      youtubeId
+    }));
+
+    try {
+      const youtubeMetadata = await getYouTubeMetadata(youtubeId);
+
+      await prisma.video.update({
+        where: { youtubeId },
+        data: {
+          title: youtubeMetadata.title,
+          description: youtubeMetadata.description,
+          publishedAt: youtubeMetadata.publishedAt,
+          viewCount: youtubeMetadata.viewCount,
+          likeCount: youtubeMetadata.likeCount,
+          channelTitle: youtubeMetadata.channelTitle,
+        },
+      });
+
+      console.log(JSON.stringify({ action: "metadata_backfilled", youtubeId }));
+      successCount++;
+    } catch (error: unknown) {
+      console.log(JSON.stringify({
+        action: "metadata_backfill_error",
+        youtubeId,
+        error: error instanceof Error ? error.message : String(error)
+      }));
+      failCount++;
+    }
+  }
+
+  console.log(JSON.stringify({
+    action: "backfill_complete",
+    total: videosWithoutMetadata.length,
+    success: successCount,
+    failed: failCount
+  }));
 }
 
 async function backfillMissingThumbnails(): Promise<void> {
@@ -265,6 +377,8 @@ async function backfillMissingThumbnails(): Promise<void> {
 async function main() {
   try {
     console.log(JSON.stringify({ action: "sync_started", channel: CHANNEL_HANDLE }));
+
+    await backfillMissingMetadata();
 
     await backfillMissingThumbnails();
 

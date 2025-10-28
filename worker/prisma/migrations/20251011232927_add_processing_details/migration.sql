@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "ProcessingJob" ADD COLUMN     "currentClip" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "currentStep" TEXT,
+ADD COLUMN     "progress" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "totalClips" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "totalSteps" INTEGER NOT NULL DEFAULT 0;

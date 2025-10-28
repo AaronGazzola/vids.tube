@@ -2,7 +2,7 @@
 
 import { Loader2, CheckCircle2, XCircle, Clock, X, Copy } from "lucide-react";
 import { JobStatus } from "@/app/page.types";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -30,17 +30,6 @@ interface ProcessingToastProps {
 export function ProcessingToast({ status, currentStep, progress, totalSteps, currentClip, totalClips, error, outputUrl, onClose }: ProcessingToastProps) {
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    if (status === "COMPLETED" && outputUrl) {
-      const link = document.createElement("a");
-      link.href = outputUrl;
-      link.download = "video.mp4";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-  }, [status, outputUrl]);
 
   const getStatusIcon = () => {
     switch (status) {
