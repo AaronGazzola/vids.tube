@@ -260,6 +260,19 @@ export async function processVideo(
 
         resetProgressTimeout();
 
+        const cropWidth = Math.round(Number(clip.cropWidth));
+        const cropHeight = Math.round(Number(clip.cropHeight));
+        const cropX = Math.round(Number(clip.cropX));
+        const cropY = Math.round(Number(clip.cropY));
+
+        if (isNaN(cropWidth) || isNaN(cropHeight) || isNaN(cropX) || isNaN(cropY)) {
+          throw new Error(`Invalid crop dimensions: width=${clip.cropWidth}, height=${clip.cropHeight}, x=${clip.cropX}, y=${clip.cropY}`);
+        }
+
+        if (cropWidth <= 0 || cropHeight <= 0) {
+          throw new Error(`Crop dimensions must be positive: width=${cropWidth}, height=${cropHeight}`);
+        }
+
         const command = ffmpeg(downloadedVideoPath)
           .setStartTime(adjustedStartTime)
           .setDuration(duration)
@@ -267,10 +280,10 @@ export async function processVideo(
             {
               filter: "crop",
               options: {
-                w: clip.cropWidth,
-                h: clip.cropHeight,
-                x: clip.cropX,
-                y: clip.cropY,
+                w: cropWidth,
+                h: cropHeight,
+                x: cropX,
+                y: cropY,
               },
             },
           ])
