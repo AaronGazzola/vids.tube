@@ -24,8 +24,16 @@ Create YouTube Shorts from long-form YouTube videos.
 
 ```bash
 brew install redis
-brew services start redis
+redis-server --daemonize yes
 ```
+
+To verify Redis is running:
+
+```bash
+redis-cli ping
+```
+
+If the brew services command fails, use the direct command above. To stop Redis later, run `redis-cli shutdown`.
 
 2. Install dependencies:
 

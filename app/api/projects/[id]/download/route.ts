@@ -51,39 +51,10 @@ export async function GET(
 
     const downloadUrl = `${workerUrl}/download/${jobId}`;
 
-    const startLog = conditionalLog({ action: "download_proxy_start", jobId, downloadUrl, workerUrl }, { label: LOG_LABEL });
-    if (startLog) console.log(startLog);
+    const redirectLog = conditionalLog({ action: "download_redirect", jobId, downloadUrl, workerUrl }, { label: LOG_LABEL });
+    if (redirectLog) console.log(redirectLog);
 
-    const response = await fetch(downloadUrl);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      const errorLog = conditionalLog({
-        action: "download_error",
-        error: "Worker request failed",
-        jobId,
-        workerUrl,
-        downloadUrl,
-        status: response.status,
-        statusText: response.statusText,
-        errorBody: errorText
-      }, { label: LOG_LABEL });
-      if (errorLog) console.log(errorLog);
-      throw new Error(`Worker returned ${response.status}: ${errorText}`);
-    }
-
-    const fileBuffer = await response.arrayBuffer();
-
-    const readLog = conditionalLog({ action: "file_fetched", jobId, size: fileBuffer.byteLength }, { label: LOG_LABEL });
-    if (readLog) console.log(readLog);
-
-    return new NextResponse(fileBuffer, {
-      headers: {
-        "Content-Type": "video/mp4",
-        "Content-Disposition": `attachment; filename="video-${job.project.videoId}.mp4"`,
-        "Content-Length": fileBuffer.byteLength.toString(),
-      },
-    });
+    return NextResponse.redirect(downloadUrl, 302);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorLog = conditionalLog({
