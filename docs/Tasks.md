@@ -1,2 +1,3 @@
 - [ ] Update the sync script to add thumbnails to the database
 - [ ] Fix backend video processing
+- [ ] refactor away from Vercel or find alternative cost reduction method (VPS?)

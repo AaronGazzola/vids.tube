@@ -49,9 +49,10 @@ export async function GET(
       );
     }
 
-    const downloadUrl = `${workerUrl}/download/${jobId}`;
+    const normalizedWorkerUrl = workerUrl.startsWith('http') ? workerUrl : `https://${workerUrl}`;
+    const downloadUrl = `${normalizedWorkerUrl}/download/${jobId}`;
 
-    const redirectLog = conditionalLog({ action: "download_redirect", jobId, downloadUrl, workerUrl }, { label: LOG_LABEL });
+    const redirectLog = conditionalLog({ action: "download_redirect", jobId, downloadUrl, workerUrl, normalizedWorkerUrl }, { label: LOG_LABEL });
     if (redirectLog) console.log(redirectLog);
 
     return NextResponse.redirect(downloadUrl, 302);
