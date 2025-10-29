@@ -21,4 +21,12 @@ export interface SortOption {
 export interface VideoQueryParams {
   search?: string;
   sort?: SortOption;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface PaginatedVideosResponse {
+  videos: Video[];
+  nextCursor: string | null;
+  hasMore: boolean;
 }

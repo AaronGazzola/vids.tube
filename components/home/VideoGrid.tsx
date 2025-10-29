@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { VideoGridProps, SortOption, VideoQueryParams } from "@/app/page.types";
 import { cn } from "@/lib/utils";
 import { VideoCard } from "./VideoCard";
@@ -13,9 +13,9 @@ import {
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { SortAsc, Search } from "lucide-react";
+import { SortAsc, Search, Loader2 } from "lucide-react";
 import { useDebounce } from "use-debounce";
-import { useGetVideos } from "@/app/page.hooks";
+import { useGetVideosInfinite } from "@/app/page.hooks";
 
 export function VideoGrid({ className }: Omit<VideoGridProps, "videos">) {
   const [searchInput, setSearchInput] = useState("");
@@ -24,13 +24,45 @@ export function VideoGrid({ className }: Omit<VideoGridProps, "videos">) {
     field: "publishedAt",
     order: "desc",
   });
+  const observerTarget = useRef<HTMLDivElement>(null);
 
-  const queryParams: VideoQueryParams = {
+  const queryParams: Omit<VideoQueryParams, "cursor"> = {
     search: debouncedSearch || undefined,
     sort: sortOption,
   };
 
-  const { data: videos, isLoading, error } = useGetVideos(queryParams);
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useGetVideosInfinite(queryParams);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const videos = data?.pages.flatMap((page) => page.videos) ?? [];
 
   if (error) {
     return (
@@ -140,7 +172,7 @@ export function VideoGrid({ className }: Omit<VideoGridProps, "videos">) {
         </div>
       )}
 
-      {!isLoading && videos && videos.length === 0 && (
+      {!isLoading && videos.length === 0 && (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground text-lg">No videos found</p>
           <p className="text-muted-foreground text-sm mt-2">
@@ -151,12 +183,23 @@ export function VideoGrid({ className }: Omit<VideoGridProps, "videos">) {
         </div>
       )}
 
-      {!isLoading && videos && videos.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {videos.map((video) => (
-            <VideoCard key={video.id} video={video} />
-          ))}
-        </div>
+      {videos.length > 0 && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {videos.map((video) => (
+              <VideoCard key={video.id} video={video} />
+            ))}
+          </div>
+
+          <div ref={observerTarget} className="flex justify-center py-8">
+            {isFetchingNextPage && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Loading more videos...</span>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
