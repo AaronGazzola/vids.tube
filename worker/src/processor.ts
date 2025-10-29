@@ -66,6 +66,38 @@ async function updateJobProgress(
   }
 }
 
+async function getVideoDimensions(videoPath: string): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(videoPath, (err, metadata) => {
+      if (err) {
+        console.log(JSON.stringify({
+          action: "ffprobe_error",
+          error: err.message
+        }));
+        reject(err);
+        return;
+      }
+
+      const videoStream = metadata.streams.find(s => s.codec_type === 'video');
+      if (!videoStream || !videoStream.width || !videoStream.height) {
+        reject(new Error('Could not determine video dimensions'));
+        return;
+      }
+
+      console.log(JSON.stringify({
+        action: "video_dimensions_detected",
+        width: videoStream.width,
+        height: videoStream.height
+      }));
+
+      resolve({
+        width: videoStream.width,
+        height: videoStream.height
+      });
+    });
+  });
+}
+
 async function downloadVideoSegmentFromR2(
   storageUrl: string,
   outputPath: string,
@@ -215,6 +247,8 @@ export async function processVideo(
       data: { lastUsedAt: new Date() },
     });
 
+    const videoDimensions = await getVideoDimensions(downloadedVideoPath);
+
     await updateJobProgress(
       jobId,
       "Processing clips...",
@@ -260,10 +294,10 @@ export async function processVideo(
 
         resetProgressTimeout();
 
-        const cropWidth = Math.round(Number(clip.cropWidth));
-        const cropHeight = Math.round(Number(clip.cropHeight));
-        const cropX = Math.round(Number(clip.cropX));
-        const cropY = Math.round(Number(clip.cropY));
+        let cropWidth = Math.round(Number(clip.cropWidth));
+        let cropHeight = Math.round(Number(clip.cropHeight));
+        let cropX = Math.round(Number(clip.cropX));
+        let cropY = Math.round(Number(clip.cropY));
 
         if (isNaN(cropWidth) || isNaN(cropHeight) || isNaN(cropX) || isNaN(cropY)) {
           throw new Error(`Invalid crop dimensions: width=${clip.cropWidth}, height=${clip.cropHeight}, x=${clip.cropX}, y=${clip.cropY}`);
@@ -272,6 +306,24 @@ export async function processVideo(
         if (cropWidth <= 0 || cropHeight <= 0) {
           throw new Error(`Crop dimensions must be positive: width=${cropWidth}, height=${cropHeight}`);
         }
+
+        cropX = Math.max(0, Math.min(cropX, videoDimensions.width - 1));
+        cropY = Math.max(0, Math.min(cropY, videoDimensions.height - 1));
+        cropWidth = Math.min(cropWidth, videoDimensions.width - cropX);
+        cropHeight = Math.min(cropHeight, videoDimensions.height - cropY);
+
+        console.log(JSON.stringify({
+          action: "crop_dimensions_clamped",
+          clipIndex: i,
+          original: {
+            x: Math.round(Number(clip.cropX)),
+            y: Math.round(Number(clip.cropY)),
+            width: Math.round(Number(clip.cropWidth)),
+            height: Math.round(Number(clip.cropHeight))
+          },
+          clamped: { x: cropX, y: cropY, width: cropWidth, height: cropHeight },
+          videoDimensions
+        }));
 
         const command = ffmpeg(downloadedVideoPath)
           .setStartTime(adjustedStartTime)
