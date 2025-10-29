@@ -3,9 +3,9 @@
 import { VideoCardProps } from "@/app/page.types";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { Eye, ThumbsUp, Calendar } from "lucide-react";
-import Link from "next/link";
+import { Calendar, Eye, ThumbsUp } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 export function VideoCard({ video, className }: VideoCardProps) {
   const formatDuration = (seconds: number | null) => {
@@ -41,6 +41,8 @@ export function VideoCard({ video, className }: VideoCardProps) {
     });
   };
 
+  console.log("duration", video.duration);
+
   return (
     <Link
       href={`/editor/${video.youtubeId}`}
@@ -63,7 +65,7 @@ export function VideoCard({ video, className }: VideoCardProps) {
           )}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
           {video.duration && (
-            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+            <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded z-20">
               {formatDuration(video.duration)}
             </div>
           )}

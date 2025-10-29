@@ -16,6 +16,11 @@ interface VideoBounds {
   height: number;
 }
 
+interface VideoState {
+  clips: Clip[];
+  cropFrame: CropPosition;
+}
+
 interface EditorStore {
   videoId: string | null;
   storageUrl: string | null;
@@ -28,6 +33,7 @@ interface EditorStore {
   cropFrame: CropPosition;
   clips: Clip[];
   playerInstance: HTMLVideoElement | null;
+  videoStates: Record<string, VideoState>;
   setVideo: (videoId: string, storageUrl: string) => void;
   clearVideo: () => void;
   setIsPlaying: (playing: boolean) => void;
@@ -67,8 +73,33 @@ export const useEditorStore = create<EditorStore>()(
   cropFrame: DEFAULT_CROP_FRAME,
   clips: [],
   playerInstance: null,
+  videoStates: {},
 
-  setVideo: (videoId, storageUrl) => set({ videoId, storageUrl }),
+  setVideo: (videoId, storageUrl) => set((state) => {
+    if (state.videoId !== videoId) {
+      const savedState = state.videoStates[videoId];
+      const newVideoStates = state.videoId
+        ? {
+            ...state.videoStates,
+            [state.videoId]: {
+              clips: state.clips,
+              cropFrame: state.cropFrame,
+            },
+          }
+        : state.videoStates;
+
+      return {
+        videoId,
+        storageUrl,
+        videoStates: newVideoStates,
+        clips: savedState?.clips || [],
+        cropFrame: savedState?.cropFrame || DEFAULT_CROP_FRAME,
+        currentTime: 0,
+        isPlaying: false,
+      };
+    }
+    return { videoId, storageUrl };
+  }),
   clearVideo: () => set({ videoId: null, storageUrl: null }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
   setCurrentTime: (time) => set({ currentTime: time }),
@@ -130,18 +161,28 @@ export const useEditorStore = create<EditorStore>()(
 }),
     {
       name: 'editor-storage',
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         videoId: state.videoId,
         storageUrl: state.storageUrl,
-        clips: state.clips,
-        cropFrame: state.cropFrame,
+        videoStates: state.videoStates,
       }),
       migrate: (persistedState: any, version: number) => {
         if (version < 2) {
           const { videoUrl, ...rest } = persistedState;
           return { ...rest, storageUrl: null };
+        }
+        if (version < 3) {
+          const { clips, cropFrame, videoId, ...rest } = persistedState;
+          const videoStates: Record<string, VideoState> = {};
+          if (videoId && (clips?.length > 0 || cropFrame)) {
+            videoStates[videoId] = {
+              clips: clips || [],
+              cropFrame: cropFrame || DEFAULT_CROP_FRAME,
+            };
+          }
+          return { ...rest, videoId, videoStates };
         }
         return persistedState;
       },

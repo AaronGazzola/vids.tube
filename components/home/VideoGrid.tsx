@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/popover";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Filter, SortAsc, Search } from "lucide-react";
+import { SortAsc, Search } from "lucide-react";
 import { useDebounce } from "use-debounce";
 import { useGetVideos } from "@/app/page.hooks";
 
@@ -24,49 +24,10 @@ export function VideoGrid({ className }: Omit<VideoGridProps, "videos">) {
     field: "publishedAt",
     order: "desc",
   });
-  const [dateFilter, setDateFilter] = useState<string>("all");
-  const [viewFilter, setViewFilter] = useState<string>("all");
-
-  const getDateFilterValue = () => {
-    const now = new Date();
-    switch (dateFilter) {
-      case "week":
-        return {
-          from: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        };
-      case "month":
-        return {
-          from: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
-        };
-      case "year":
-        return {
-          from: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000),
-        };
-      default:
-        return undefined;
-    }
-  };
-
-  const getViewFilterValue = () => {
-    switch (viewFilter) {
-      case "1k":
-        return { minViews: 1000 };
-      case "10k":
-        return { minViews: 10000 };
-      case "100k":
-        return { minViews: 100000 };
-      case "1m":
-        return { minViews: 1000000 };
-      default:
-        return {};
-    }
-  };
 
   const queryParams: VideoQueryParams = {
     search: debouncedSearch || undefined,
-    dateFilter: getDateFilterValue(),
     sort: sortOption,
-    ...getViewFilterValue(),
   };
 
   const { data: videos, isLoading, error } = useGetVideos(queryParams);
@@ -91,65 +52,6 @@ export function VideoGrid({ className }: Omit<VideoGridProps, "videos">) {
             className="pl-10"
           />
         </div>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-3">Date Published</h4>
-                <RadioGroup value={dateFilter} onValueChange={setDateFilter}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="all" id="date-all" />
-                    <Label htmlFor="date-all">All time</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="week" id="date-week" />
-                    <Label htmlFor="date-week">Last week</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="month" id="date-month" />
-                    <Label htmlFor="date-month">Last month</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="year" id="date-year" />
-                    <Label htmlFor="date-year">Last year</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div>
-                <h4 className="font-medium mb-3">Minimum Views</h4>
-                <RadioGroup value={viewFilter} onValueChange={setViewFilter}>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="all" id="views-all" />
-                    <Label htmlFor="views-all">Any</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="1k" id="views-1k" />
-                    <Label htmlFor="views-1k">1,000+</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="10k" id="views-10k" />
-                    <Label htmlFor="views-10k">10,000+</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="100k" id="views-100k" />
-                    <Label htmlFor="views-100k">100,000+</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="1m" id="views-1m" />
-                    <Label htmlFor="views-1m">1,000,000+</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
 
         <Popover>
           <PopoverTrigger asChild>
@@ -242,8 +144,8 @@ export function VideoGrid({ className }: Omit<VideoGridProps, "videos">) {
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-muted-foreground text-lg">No videos found</p>
           <p className="text-muted-foreground text-sm mt-2">
-            {searchInput || dateFilter !== "all" || viewFilter !== "all"
-              ? "Try adjusting your search or filters"
+            {searchInput
+              ? "Try adjusting your search"
               : "Videos will appear here once they are synced from your YouTube channel"}
           </p>
         </div>

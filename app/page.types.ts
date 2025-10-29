@@ -18,15 +18,7 @@ export interface SortOption {
   order: SortOrder;
 }
 
-export interface DateFilter {
-  from?: Date;
-  to?: Date;
-}
-
 export interface VideoQueryParams {
   search?: string;
-  dateFilter?: DateFilter;
-  minViews?: number;
-  maxViews?: number;
   sort?: SortOption;
 }

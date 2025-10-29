@@ -18,28 +18,13 @@ export const getVideosAction = async (
       };
     }
 
-    if (params?.dateFilter) {
-      where.publishedAt = {};
-      if (params.dateFilter.from) {
-        where.publishedAt.gte = params.dateFilter.from;
-      }
-      if (params.dateFilter.to) {
-        where.publishedAt.lte = params.dateFilter.to;
-      }
-    }
-
-    if (params?.minViews !== undefined || params?.maxViews !== undefined) {
-      where.viewCount = {};
-      if (params.minViews !== undefined) {
-        where.viewCount.gte = params.minViews;
-      }
-      if (params.maxViews !== undefined) {
-        where.viewCount.lte = params.maxViews;
-      }
-    }
-
     const orderBy: Prisma.VideoOrderByWithRelationInput = params?.sort
-      ? { [params.sort.field]: params.sort.order }
+      ? {
+          [params.sort.field]: {
+            sort: params.sort.order,
+            nulls: params.sort.order === "desc" ? "last" : "first"
+          }
+        }
       : { publishedAt: "desc" };
 
     const videos = await prisma.video.findMany({
