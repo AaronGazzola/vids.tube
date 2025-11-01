@@ -28,8 +28,11 @@ model Project {
 
 model ProcessingJob {
   id              String    @id @default(cuid())
-  projectId       String
-  project         Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId          String?
+  videoId         String?
+  video           Video?    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   status          JobStatus @default(PENDING)
   currentStep     String?
   progress        Int       @default(0)
@@ -40,30 +43,75 @@ model ProcessingJob {
   error           String?
   createdAt       DateTime  @default(now())
   completedAt     DateTime?
+
+  @@index([userId])
+  @@index([videoId])
 }
 
 model Video {
-  id            String      @id @default(cuid())
-  youtubeId     String      @unique
-  sourceUrl     String
-  storageUrl    String?
-  storageKey    String?
+  id              String           @id @default(cuid())
+  youtubeId       String           @unique
+  sourceUrl       String
+  storageUrl      String?
+  storageKey      String?
+  thumbnailUrl    String?
+  thumbnailKey    String?
+  duration        Float?
+  fileSize        BigInt?
+  resolution      String?
+  downloadedAt    DateTime?
+  lastUsedAt      DateTime         @default(now())
+  title           String?
+  description     String?
+  publishedAt     DateTime?
+  viewCount       Int?
+  likeCount       Int?
+  channelTitle    String?
+  projects        Project[]
+  sections        Section[]
+  processingJobs  ProcessingJob[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model Section {
+  id        String   @id @default(cuid())
+  userId    String
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  startTime Float
+  endTime   Float
+  order     Int
+  clips     Clip[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([videoId])
+  @@index([videoId, order])
+}
+
+model Clip {
+  id            String   @id @default(cuid())
+  userId        String
+  sectionId     String
+  section       Section  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  cropX         Float
+  cropY         Float
+  cropWidth     Float
+  cropHeight    Float
+  previewX      Float
+  previewY      Float
+  previewScale  Float
+  zIndex        Int      @default(0)
   thumbnailUrl  String?
   thumbnailKey  String?
-  duration      Float?
-  fileSize      BigInt?
-  resolution    String?
-  downloadedAt  DateTime?
-  lastUsedAt    DateTime    @default(now())
-  title         String?
-  description   String?
-  publishedAt   DateTime?
-  viewCount     Int?
-  likeCount     Int?
-  channelTitle  String?
-  projects      Project[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sectionId])
+  @@index([sectionId, zIndex])
 }
 
 enum JobStatus {

@@ -1,86 +1,67 @@
 "use client";
 
-import { ClipCreator } from "@/components/editor/ClipCreator";
-import { ClipsList } from "@/components/editor/ClipsList";
-import { EditorLayout } from "@/components/editor/EditorLayout";
-import { VideoPlayer } from "@/components/editor/VideoPlayer";
-import { VideoPlayerWithControls } from "@/components/editor/VideoPlayerWithControls";
 import { parseParam } from "@/lib/string.util";
-import { useEditorStore } from "@/store/useEditorStore";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import {
-  useGetVideo,
-  useKeyboardShortcuts,
-  useProcessingStatus,
-  useProcessingToast,
-} from "./page.hooks";
+import { SectionManager } from "./(components)/SectionManager";
+import { ClipCreator } from "./(components)/ClipCreator";
+import { PreviewWindow } from "./(components)/PreviewWindow";
+import { ClipsList } from "./(components)/ClipsList";
+import { useGetSections } from "./section.hooks";
+import { useShortsEditorStore } from "./page.stores";
 import { useProcessingStore } from "./page.stores";
+import { useProcessingStatus } from "./processing.hooks";
+import { useEffect } from "react";
 
-export default function EditorPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export default function ShortsEditorPage() {
   const { videoId: videoIdParam } = useParams();
   const videoId = parseParam(videoIdParam);
-  const { data: video, isLoading, error } = useGetVideo(videoId);
-  console.log({
-    video,
-  });
-  const { setVideo } = useEditorStore();
-  const currentJob = useProcessingStore((state) => state.currentJob);
+  const { data: sections, isLoading } = useGetSections(videoId);
+  const { currentJob } = useProcessingStore();
 
-  useEffect(() => {
-    if (video && video.storageUrl) {
-      setVideo(video.youtubeId, video.storageUrl);
-    }
-  }, [video, setVideo]);
-
-  useKeyboardShortcuts();
   useProcessingStatus(currentJob?.id || null, !!currentJob?.id);
-  const { isProcessing } = useProcessingToast();
 
   if (isLoading) {
     return (
-      <EditorLayout>
-        <main className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading video...</p>
-        </main>
-      </EditorLayout>
-    );
-  }
-
-  if (error || !video) {
-    return (
-      <EditorLayout>
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-destructive">Failed to load video</p>
-            <p className="text-muted-foreground text-sm mt-2">
-              {error ? String(error) : "Video not found"}
-            </p>
-          </div>
-        </main>
-      </EditorLayout>
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading editor...</p>
+      </div>
     );
   }
 
   return (
-    <EditorLayout>
-      <main className="flex-1 flex flex-col overflow-auto p-4 lg:p-6">
-        <div className="max-w-7xl mx-auto w-full space-y-6">
-          <VideoPlayer />
-          <VideoPlayerWithControls disabled={isProcessing} />
+    <div className="min-h-screen bg-gray-50">
+      <div className="h-screen flex">
+        <div className="w-64 bg-white">
+          <SectionManager videoId={videoId} />
         </div>
-      </main>
 
-      <EditorLayout.Sidebar
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
-      >
-        <div className="space-y-6">
-          <ClipCreator disabled={isProcessing} />
-          <ClipsList disabled={isProcessing} />
+        <div className="flex-1 p-6 overflow-auto">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6">Shorts Video Editor</h1>
+
+            <div className="bg-white rounded-lg shadow p-6 mb-6">
+              <h2 className="text-lg font-semibold mb-4">Video Player</h2>
+              <div className="bg-black aspect-video rounded flex items-center justify-center text-white">
+                Video Player Placeholder
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-white rounded-lg shadow p-6">
+                <ClipCreator videoId={videoId} />
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-6">
+                <ClipsList />
+              </div>
+            </div>
+          </div>
         </div>
-      </EditorLayout.Sidebar>
-    </EditorLayout>
+
+        <div className="w-80 bg-white border-l">
+          <PreviewWindow />
+        </div>
+      </div>
+    </div>
   );
 }

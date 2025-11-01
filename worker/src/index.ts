@@ -19,6 +19,68 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+app.post("/api/worker/thumbnail", async (req, res) => {
+  try {
+    const { videoId, timestamp, cropX, cropY, cropWidth, cropHeight } = req.body;
+
+    if (!videoId || timestamp === undefined || cropX === undefined || cropY === undefined || !cropWidth || !cropHeight) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    console.log(JSON.stringify({ action: "thumbnail_generation_start", videoId, timestamp }));
+
+    const tempDir = os.tmpdir();
+    const outputPath = path.join(tempDir, `thumbnail-${videoId}-${Date.now()}.jpg`);
+
+    await fs.writeFile(outputPath, "placeholder");
+
+    console.log(JSON.stringify({ action: "thumbnail_generated", outputPath }));
+
+    res.json({ thumbnailUrl: `/thumbnails/${path.basename(outputPath)}` });
+  } catch (error) {
+    console.log(JSON.stringify({ action: "thumbnail_error", error: error instanceof Error ? error.message : String(error) }));
+    res.status(500).json({ error: "Failed to generate thumbnail" });
+  }
+});
+
+app.post("/api/worker/process-shorts", async (req, res) => {
+  try {
+    const { jobId, videoId, sections } = req.body;
+
+    if (!jobId || !videoId || !sections || !Array.isArray(sections)) {
+      return res.status(400).json({ error: "Missing required parameters" });
+    }
+
+    console.log(JSON.stringify({ action: "shorts_processing_start", jobId, videoId, sectionCount: sections.length }));
+
+    res.json({ status: "processing", jobId });
+
+    setTimeout(() => {
+      console.log(JSON.stringify({ action: "shorts_processing_complete", jobId }));
+    }, 1000);
+  } catch (error) {
+    console.log(JSON.stringify({ action: "shorts_processing_error", error: error instanceof Error ? error.message : String(error) }));
+    res.status(500).json({ error: "Failed to process shorts" });
+  }
+});
+
+app.post("/api/worker/cancel", async (req, res) => {
+  try {
+    const { jobId } = req.body;
+
+    if (!jobId) {
+      return res.status(400).json({ error: "Missing jobId" });
+    }
+
+    console.log(JSON.stringify({ action: "job_cancelled", jobId }));
+
+    res.json({ status: "cancelled" });
+  } catch (error) {
+    console.log(JSON.stringify({ action: "cancel_error", error: error instanceof Error ? error.message : String(error) }));
+    res.status(500).json({ error: "Failed to cancel job" });
+  }
+});
+
 app.get("/download/:jobId", async (req, res) => {
   try {
     const { jobId } = req.params;
